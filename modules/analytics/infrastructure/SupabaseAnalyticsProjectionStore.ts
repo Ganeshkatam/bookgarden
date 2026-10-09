@@ -38,6 +38,14 @@ export class SupabaseAnalyticsProjectionStore implements AnalyticsProjectionStor
     return (data as any)?.book_genres?.[0]?.genres?.name || null;
   }
 
+  private async invokeRpc(name: string, params: Record<string, unknown>): Promise<void> {
+    const { error } = await this.supabase.rpc(name as any, params);
+    if (error) {
+      console.error(`[SupabaseAnalyticsProjectionStore] RPC ${name} failed:`, error);
+      throw error;
+    }
+  }
+
   async recordPagesRead(
     userId: string,
     bookId: string,
@@ -50,14 +58,14 @@ export class SupabaseAnalyticsProjectionStore implements AnalyticsProjectionStor
     const genre = await this.getBookGenre(bookId);
 
     // Daily
-    await this.supabase.rpc("increment_analytics_daily_pages" as any, {
+    await this.invokeRpc("increment_analytics_daily_pages", {
       p_user_id: userId,
       p_date: dateStr,
       p_pages: pagesDelta,
     });
 
     // Monthly
-    await this.supabase.rpc("increment_analytics_monthly_pages" as any, {
+    await this.invokeRpc("increment_analytics_monthly_pages", {
       p_user_id: userId,
       p_month: monthStr,
       p_pages: pagesDelta,
@@ -65,7 +73,7 @@ export class SupabaseAnalyticsProjectionStore implements AnalyticsProjectionStor
 
     // Genre
     if (genre) {
-      await this.supabase.rpc("increment_analytics_genre_pages" as any, {
+      await this.invokeRpc("increment_analytics_genre_pages", {
         p_user_id: userId,
         p_genre: genre,
         p_pages: pagesDelta,
@@ -73,7 +81,7 @@ export class SupabaseAnalyticsProjectionStore implements AnalyticsProjectionStor
     }
 
     // Book Stats
-    await this.supabase.rpc("increment_analytics_book_pages" as any, {
+    await this.invokeRpc("increment_analytics_book_pages", {
       p_book_id: bookId,
       p_pages: pagesDelta,
     });
@@ -88,27 +96,27 @@ export class SupabaseAnalyticsProjectionStore implements AnalyticsProjectionStor
     const genre = await this.getBookGenre(bookId);
 
     // Daily
-    await this.supabase.rpc("increment_analytics_daily_completed" as any, {
+    await this.invokeRpc("increment_analytics_daily_completed", {
       p_user_id: userId,
       p_date: dateStr,
     });
 
     // Monthly
-    await this.supabase.rpc("increment_analytics_monthly_completed" as any, {
+    await this.invokeRpc("increment_analytics_monthly_completed", {
       p_user_id: userId,
       p_month: monthStr,
     });
 
     // Genre
     if (genre) {
-      await this.supabase.rpc("increment_analytics_genre_completed" as any, {
+      await this.invokeRpc("increment_analytics_genre_completed", {
         p_user_id: userId,
         p_genre: genre,
       });
     }
 
     // Book Stats
-    await this.supabase.rpc("increment_analytics_book_completed" as any, {
+    await this.invokeRpc("increment_analytics_book_completed", {
       p_book_id: bookId,
     });
   }
@@ -122,14 +130,14 @@ export class SupabaseAnalyticsProjectionStore implements AnalyticsProjectionStor
 
     // Genre
     if (genre) {
-      await this.supabase.rpc("increment_analytics_genre_started" as any, {
+      await this.invokeRpc("increment_analytics_genre_started", {
         p_user_id: userId,
         p_genre: genre,
       });
     }
 
     // Book Stats (Reads count)
-    await this.supabase.rpc("increment_analytics_book_reads" as any, {
+    await this.invokeRpc("increment_analytics_book_reads", {
       p_book_id: bookId,
     });
   }
@@ -143,13 +151,13 @@ export class SupabaseAnalyticsProjectionStore implements AnalyticsProjectionStor
 
     // Genre
     if (genre) {
-      await this.supabase.rpc("increment_analytics_genre_rating" as any, {
+      await this.invokeRpc("increment_analytics_genre_rating", {
         p_user_id: userId,
         p_genre: genre,
       });
     }
 
-    await this.supabase.rpc("recalculate_analytics_book_rating" as any, {
+    await this.invokeRpc("recalculate_analytics_book_rating", {
       p_book_id: bookId,
     });
   }
@@ -158,7 +166,7 @@ export class SupabaseAnalyticsProjectionStore implements AnalyticsProjectionStor
     const genre = await this.getBookGenre(bookId);
 
     if (genre) {
-      await this.supabase.rpc("increment_analytics_genre_likes" as any, {
+      await this.invokeRpc("increment_analytics_genre_likes", {
         p_user_id: userId,
         p_genre: genre,
       });
