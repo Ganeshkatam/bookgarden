@@ -34,6 +34,7 @@ export class NotificationEventHandlers {
         });
       } catch (error) {
         console.error("[NotificationEventHandlers] Failed to create level up notification:", error);
+        throw error;
       }
     });
 
@@ -56,6 +57,7 @@ export class NotificationEventHandlers {
         });
       } catch (error) {
         console.error("[NotificationEventHandlers] Failed to create achievement notification:", error);
+        throw error;
       }
     });
 
@@ -78,6 +80,7 @@ export class NotificationEventHandlers {
         });
       } catch (error) {
         console.error("[NotificationEventHandlers] Failed to create book completed notification:", error);
+        throw error;
       }
     });
 
@@ -100,6 +103,7 @@ export class NotificationEventHandlers {
         });
       } catch (error) {
         console.error("[NotificationEventHandlers] Failed to create library book notification:", error);
+        throw error;
       }
     });
   }

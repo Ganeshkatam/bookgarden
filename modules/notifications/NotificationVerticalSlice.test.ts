@@ -189,4 +189,17 @@ describe("Notifications Vertical Slice & Event Flow", () => {
     // User 1 notification remains unread
     expect(await repository.getUnreadCount("user-1")).toBe(1);
   });
+
+  it("propagates repository creation failure to dispatcher instead of silently swallowing it", async () => {
+    jest.spyOn(repository, "create").mockRejectedValueOnce(
+      new Error("Database connection lost during notification insert"),
+    );
+
+    await expect(
+      eventBus.dispatch("reader.book.completed", {
+        userId: "user-fail",
+        bookId: "book-fail",
+      }),
+    ).rejects.toThrow("Database connection lost during notification insert");
+  });
 });
