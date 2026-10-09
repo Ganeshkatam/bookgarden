@@ -212,8 +212,10 @@ export interface EventPayloads {
 // 3. The Contract for the Event Bus
 export interface IEventBus {
   emit<T extends PlatformEventName>(event: T, payload: EventPayloads[T]): void;
+  dispatch<T extends PlatformEventName>(event: T, payload: EventPayloads[T]): Promise<void>;
   subscribe<T extends PlatformEventName>(
     event: T,
     handler: (payload: EventPayloads[T]) => void | Promise<void>,
   ): () => void;
 }
+

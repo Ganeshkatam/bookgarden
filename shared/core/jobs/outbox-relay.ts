@@ -1,18 +1,26 @@
-import { IEventBus } from "../../core/events/types";
+import { IEventBus, PlatformEventName, EventPayloads } from "../../core/events/types";
 import { WorkerDatabaseClient } from "@/shared/infrastructure/database/WorkerDatabaseClient";
+import {
+  validateEventPayload,
+  PayloadValidationError,
+} from "../../core/events/payload-validators";
 
-const MAX_RETRIES = parseInt(process.env.OUTBOX_MAX_RETRIES || "3", 10);
+const parsedMax = parseInt(process.env.OUTBOX_MAX_RETRIES || "3", 10);
+const MAX_RETRIES = Number.isInteger(parsedMax) && parsedMax > 0 ? parsedMax : 3;
 
 /**
  * Outbox Relay
  *
- * Polls `outbox_events` for pending events with fenced leases, dispatches them to the
- * in-memory EventBus, and marks them as completed via internal scoped capabilities.
+ * Polls `outbox_events` for pending events with fenced leases, validates event payloads,
+ * dispatches them to registered handlers on the EventBus (awaiting full execution), and
+ * marks them as completed via internal scoped capabilities.
  *
  * Design decisions:
  * - Uses `WorkerDatabaseClient` via direct PostgreSQL connection using `tomesphere_worker` role.
  * - Invokes `internal.claim_outbox_events` RPC for safe concurrent claiming with lease fencing (FOR UPDATE SKIP LOCKED).
  * - Invokes `internal.complete_outbox_event` RPC for state transitions with lease validation.
+ * - Awaits handler completion via `eventBus.dispatch` to prevent premature event completion.
+ * - Validates payload structure at runtime, routing malformed payloads directly to dead_letter.
  * - Never mutates `public.outbox_events` directly.
  * - Does NOT use SUPABASE_SERVICE_ROLE_KEY or PostgREST Data API.
  */
@@ -50,11 +58,16 @@ export async function processOutbox(
 
   // 2. Process each claimed event
   for (const event of events) {
+    let dispatchSucceeded = false;
     try {
-      const eventType = event.event_type as keyof import("../../core/events/types").EventPayloads;
-      const payload = event.payload as import("../../core/events/types").EventPayloads[typeof eventType];
+      const eventType = event.event_type as PlatformEventName;
 
-      eventBus.emit(eventType, payload);
+      // Validate payload structure at runtime before handler invocation
+      const validatedPayload = validateEventPayload(eventType, event.payload);
+
+      // Await all registered handlers before marking event processed
+      await eventBus.dispatch(eventType, validatedPayload);
+      dispatchSucceeded = true;
 
       // 3. Mark as processed via fenced complete RPC
       await WorkerDatabaseClient.completeOutboxEvent(
@@ -66,39 +79,54 @@ export async function processOutbox(
       processed++;
     } catch (error: unknown) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      const isValidationError = error instanceof PayloadValidationError;
+      const isLeaseError = errorMsg.toLowerCase().includes("lease");
       const newRetryCount = (event.retry_count || 0) + 1;
-      // Invariant: When the resulting retry count reaches or exceeds MAX_RETRIES (3), the worker
-      // must transition directly to 'dead_letter'; 'failed' is permitted only when retry_count remains strictly < 3.
-      const isDeadLetter = newRetryCount >= MAX_RETRIES;
+      // Invariant: Validation errors are permanently invalid and must transition directly
+      // to 'dead_letter'. For transient errors, transition to 'dead_letter' when retry_count reaches MAX_RETRIES.
+      const isDeadLetter = isValidationError || newRetryCount >= MAX_RETRIES;
 
-      try {
-        await WorkerDatabaseClient.completeOutboxEvent(
-          event.id,
-          event.lease_id,
-          isDeadLetter ? "dead_letter" : "failed",
-          errorMsg,
-        );
-      } catch (completeErr: unknown) {
-        const fenceMsg = completeErr instanceof Error ? completeErr.message : String(completeErr);
+      // Distinguish handler execution failures from database acknowledgment failures
+      const recordedError = dispatchSucceeded
+        ? `Database acknowledgment failed: ${errorMsg}`
+        : errorMsg;
+
+      // Only attempt secondary completion if the failure wasn't already a lease fencing/expiry violation
+      if (!isLeaseError) {
+        try {
+          await WorkerDatabaseClient.completeOutboxEvent(
+            event.id,
+            event.lease_id,
+            isDeadLetter ? "dead_letter" : "failed",
+            recordedError,
+          );
+        } catch (completeErr: unknown) {
+          const fenceMsg = completeErr instanceof Error ? completeErr.message : String(completeErr);
+          console.error(
+            `[Outbox Relay] Completion RPC failed for event ${event.id} (target status: ${isDeadLetter ? "dead_letter" : "failed"}):`,
+            fenceMsg,
+          );
+        }
+      } else {
         console.error(
-          `[Outbox Relay] Lease fencing violation or completion failure for event ${event.id}:`,
-          fenceMsg,
+          `[Outbox Relay] Lease fencing violation on event ${event.id}; aborting further completion attempts on expired lease: ${errorMsg}`,
         );
       }
 
       if (isDeadLetter) {
         console.error(
-          `[Outbox Relay] Permanently failed event ${event.id} (transitioned to dead_letter): ${errorMsg}`,
+          `[Outbox Relay] Permanently failed event ${event.id} (transitioned to dead_letter): ${recordedError}`,
         );
         deadLetter++;
       } else {
         console.warn(
-          `[Outbox Relay] Retryable failure for event ${event.id} (attempt ${newRetryCount}/${MAX_RETRIES}): ${errorMsg}`,
+          `[Outbox Relay] Retryable failure for event ${event.id} (attempt ${newRetryCount}/${MAX_RETRIES}): ${recordedError}`,
         );
         failed++;
       }
     }
   }
+
 
   console.log(
     `[Outbox Relay] Batch complete: ${processed} processed, ${failed} failed, ${deadLetter} dead letter`,

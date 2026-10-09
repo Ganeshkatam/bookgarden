@@ -24,10 +24,15 @@ class TestEventBus implements IEventBus {
     }
   }
 
+  async dispatch<T extends PlatformEventName>(event: T, payload: EventPayloads[T]): Promise<void> {
+    await this.publish(event, payload);
+  }
+
   emit<T extends PlatformEventName>(event: T, payload: EventPayloads[T]): void {
     this.publish(event, payload);
   }
 }
+
 
 describe("Notifications Vertical Slice & Event Flow", () => {
   let eventBus: TestEventBus;
