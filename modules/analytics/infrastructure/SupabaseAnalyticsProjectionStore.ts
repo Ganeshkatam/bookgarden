@@ -7,23 +7,31 @@ export interface AnalyticsProjectionStore {
     bookId: string,
     pagesDelta: number,
     dateStr: string,
+    eventId?: string,
   ): Promise<void>;
   recordBookCompleted(
     userId: string,
     bookId: string,
     dateStr: string,
+    eventId?: string,
   ): Promise<void>;
   recordBookStarted(
     userId: string,
     bookId: string,
     dateStr: string,
+    eventId?: string,
   ): Promise<void>;
   updateBookRating(
     userId: string,
     bookId: string,
     rating: number,
+    eventId?: string,
   ): Promise<void>;
-  recordBookLiked(userId: string, bookId: string): Promise<void>;
+  recordBookLiked(
+    userId: string,
+    bookId: string,
+    eventId?: string,
+  ): Promise<void>;
 }
 
 export class SupabaseAnalyticsProjectionStore implements AnalyticsProjectionStore {
@@ -51,11 +59,25 @@ export class SupabaseAnalyticsProjectionStore implements AnalyticsProjectionStor
     bookId: string,
     pagesDelta: number,
     dateStr: string,
+    eventId?: string,
   ): Promise<void> {
     if (pagesDelta <= 0) return;
 
     const monthStr = dateStr.substring(0, 7);
     const genre = await this.getBookGenre(bookId);
+
+    if (eventId) {
+      await this.invokeRpc("record_analytics_pages_read_idempotent", {
+        p_event_id: eventId,
+        p_user_id: userId,
+        p_book_id: bookId,
+        p_pages: pagesDelta,
+        p_date: dateStr,
+        p_month: monthStr,
+        p_genre: genre,
+      });
+      return;
+    }
 
     // Daily
     await this.invokeRpc("increment_analytics_daily_pages", {
@@ -91,9 +113,22 @@ export class SupabaseAnalyticsProjectionStore implements AnalyticsProjectionStor
     userId: string,
     bookId: string,
     dateStr: string,
+    eventId?: string,
   ): Promise<void> {
     const monthStr = dateStr.substring(0, 7);
     const genre = await this.getBookGenre(bookId);
+
+    if (eventId) {
+      await this.invokeRpc("record_analytics_book_completed_idempotent", {
+        p_event_id: eventId,
+        p_user_id: userId,
+        p_book_id: bookId,
+        p_date: dateStr,
+        p_month: monthStr,
+        p_genre: genre,
+      });
+      return;
+    }
 
     // Daily
     await this.invokeRpc("increment_analytics_daily_completed", {

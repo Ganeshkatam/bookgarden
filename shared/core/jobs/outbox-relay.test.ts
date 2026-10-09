@@ -52,7 +52,14 @@ describe("Outbox Relay", () => {
       const result = await processOutbox(mockEventBus, "test-worker");
 
       expect(WorkerDatabaseClient.claimOutboxEvents).toHaveBeenCalledWith(50, "test-worker", 300);
-      expect(mockEventBus.dispatch).toHaveBeenCalledWith("reader.session.started", mockEvent.payload);
+      expect(mockEventBus.dispatch).toHaveBeenCalledWith(
+        "reader.session.started",
+        mockEvent.payload,
+        {
+          eventId: mockEvent.id,
+          occurredAt: mockEvent.occurred_at,
+        },
+      );
       expect(WorkerDatabaseClient.completeOutboxEvent).toHaveBeenCalledWith(
         mockEvent.id,
         mockEvent.lease_id,

@@ -141,4 +141,43 @@ describe("MemoryEventBus", () => {
       expect(handlerRan).toBe(true);
     });
   });
+
+  describe("context forwarding", () => {
+    it("forwards EventContext to subscribed handlers on dispatch", async () => {
+      let receivedContext: any;
+      eventBus.subscribe("reader.book.completed", async (_payload, context) => {
+        receivedContext = context;
+      });
+
+      await eventBus.dispatch(
+        "reader.book.completed",
+        { userId: "u1", bookId: "b1" },
+        { eventId: "ev-999", occurredAt: "2026-10-09T00:00:00Z" },
+      );
+
+      expect(receivedContext).toEqual({
+        eventId: "ev-999",
+        occurredAt: "2026-10-09T00:00:00Z",
+      });
+    });
+
+    it("forwards EventContext to subscribed handlers on emit", async () => {
+      let receivedContext: any;
+      eventBus.subscribe("reader.book.completed", async (_payload, context) => {
+        receivedContext = context;
+      });
+
+      eventBus.emit(
+        "reader.book.completed",
+        { userId: "u1", bookId: "b1" },
+        { eventId: "ev-888", occurredAt: "2026-10-09T00:00:00Z" },
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      expect(receivedContext).toEqual({
+        eventId: "ev-888",
+        occurredAt: "2026-10-09T00:00:00Z",
+      });
+    });
+  });
 });

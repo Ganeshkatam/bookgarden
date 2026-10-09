@@ -20,12 +20,13 @@ class MemoryEventBus implements IEventBus {
   async dispatch<T extends PlatformEventName>(
     event: T,
     payload: EventPayloads[T],
+    context?: import("./types").EventContext,
   ): Promise<void> {
     const eventHandlers = this.handlers.get(event);
     if (!eventHandlers || eventHandlers.size === 0) return;
 
     const handlerPromises = Array.from(eventHandlers).map(async (handler) => {
-      await handler(payload);
+      await handler(payload, context);
     });
 
     const results = await Promise.allSettled(handlerPromises);
@@ -57,7 +58,11 @@ class MemoryEventBus implements IEventBus {
    * Emits an event to all registered subscribers asynchronously
    * to prevent blocking the main thread or the publisher.
    */
-  emit<T extends PlatformEventName>(event: T, payload: EventPayloads[T]): void {
+  emit<T extends PlatformEventName>(
+    event: T,
+    payload: EventPayloads[T],
+    context?: import("./types").EventContext,
+  ): void {
     const eventHandlers = this.handlers.get(event);
     if (!eventHandlers || eventHandlers.size === 0) return;
 
@@ -65,7 +70,7 @@ class MemoryEventBus implements IEventBus {
     setTimeout(() => {
       eventHandlers.forEach(async (handler) => {
         try {
-          await handler(payload);
+          await handler(payload, context);
         } catch (error) {
           console.error(`Event handler failed for event: ${event}`, {
             error,
@@ -81,7 +86,7 @@ class MemoryEventBus implements IEventBus {
    */
   subscribe<T extends PlatformEventName>(
     event: T,
-    handler: (payload: EventPayloads[T]) => void | Promise<void>,
+    handler: (payload: EventPayloads[T], context?: import("./types").EventContext) => void | Promise<void>,
   ): () => void {
     if (!this.handlers.has(event)) {
       this.handlers.set(event, new Set());

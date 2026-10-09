@@ -1,4 +1,4 @@
-import { IEventBus, PlatformEventName, EventPayloads } from "../../core/events/types";
+import { IEventBus, PlatformEventName, EventPayloads, EventContext } from "../../core/events/types";
 import { WorkerDatabaseClient } from "@/shared/infrastructure/database/WorkerDatabaseClient";
 import {
   validateEventPayload,
@@ -65,8 +65,12 @@ export async function processOutbox(
       // Validate payload structure at runtime before handler invocation
       const validatedPayload = validateEventPayload(eventType, event.payload);
 
-      // Await all registered handlers before marking event processed
-      await eventBus.dispatch(eventType, validatedPayload);
+      // Await all registered handlers before marking event processed, supplying immutable outbox event context
+      const context: EventContext = {
+        eventId: event.id,
+        occurredAt: event.occurred_at,
+      };
+      await eventBus.dispatch(eventType, validatedPayload, context);
       dispatchSucceeded = true;
 
       // 3. Mark as processed via fenced complete RPC
