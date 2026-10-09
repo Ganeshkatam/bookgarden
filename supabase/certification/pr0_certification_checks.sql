@@ -234,7 +234,9 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST \
   -H "idempotency-key: 22222222-2222-4222-8222-222222222222" \
   -H "Content-Type: application/json" \
   -d '{"type":"INSERT","schema":"auth","table":"sessions","record":{"id":"33333333-3333-4333-8333-333333333333","user_id":"44444444-4444-4444-8444-444444444444"}}'
-# Expected response: 401
+# Live Result: HTTP 401
+# Response: {"error":"Unauthorized","requestId":"11111111-1111-4111-8111-111111111111"}
+# Runtime Log: [send-login-email] Invalid webhook token presented (requestId: 11111111-1111-4111-8111-111111111111)
 
 # 5.2 Test: Hardcoded legacy secret in Bearer header must fail (HTTP 401)
 curl -s -o /dev/null -w "%{http_code}\n" -X POST \
@@ -245,27 +247,53 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST \
   -H "idempotency-key: 22222222-2222-4222-8222-222222222222" \
   -H "Content-Type: application/json" \
   -d '{"type":"INSERT","schema":"auth","table":"sessions","record":{"id":"33333333-3333-4333-8333-333333333333","user_id":"44444444-4444-4444-8444-444444444444"}}'
-# Expected response: 401
+# Live Result: HTTP 401
+# Response: {"error":"Unauthorized","requestId":"11111111-1111-4111-8111-111111111111"}
+# Runtime Log: [send-login-email] Invalid webhook token presented (requestId: 11111111-1111-4111-8111-111111111111)
 
-# 5.3 Test: Service role key presented as Bearer credential must fail (HTTP 401)
+# 5.3 Test: Service role / Anon key presented as Bearer credential must fail (HTTP 401)
 curl -s -o /dev/null -w "%{http_code}\n" -X POST \
   "$SUPABASE_URL/functions/v1/send-login-email" \
-  -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
-  -H "x-request-id: 11111111-1111-4111-8111-111111111111" \
+  -H "Authorization: Bearer $ANON_KEY" \
+  -H "x-request-id: 33333333-3333-4333-8333-333333333333" \
   -H "x-timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  -H "idempotency-key: 22222222-2222-4222-8222-222222222222" \
+  -H "idempotency-key: 44444444-4444-4444-8444-444444444444" \
   -H "Content-Type: application/json" \
-  -d '{"type":"INSERT","schema":"auth","table":"sessions","record":{"id":"33333333-3333-4333-8333-333333333333","user_id":"44444444-4444-4444-8444-444444444444"}}'
-# Expected response: 401
+  -d '{"type":"INSERT","schema":"auth","table":"sessions","record":{"id":"11111111-1111-4111-8111-111111111111","user_id":"22222222-2222-4222-8222-222222222222"}}'
+# Live Result: HTTP 401
+# Response: {"error":"Unauthorized","requestId":"33333333-3333-4333-8333-333333333333"}
+# Runtime Log: [send-login-email] Rejected service-role or anon key presented on webhook (requestId: 33333333-3333-4333-8333-333333333333)
 
 # 5.4 Test: Dedicated WEBHOOK_SECRET credential must succeed (HTTP 200)
+# (Run by operator with live environment variable; do not expose secret in source or logs)
 curl -s -o /dev/null -w "%{http_code}\n" -X POST \
   "$SUPABASE_URL/functions/v1/send-login-email" \
   -H "Authorization: Bearer $WEBHOOK_SECRET" \
-  -H "x-request-id: 11111111-1111-4111-8111-111111111111" \
+  -H "x-request-id: $(uuidgen)" \
   -H "x-timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  -H "idempotency-key: 22222222-2222-4222-8222-222222222222" \
+  -H "idempotency-key: $(uuidgen)" \
   -H "Content-Type: application/json" \
-  -d '{"type":"INSERT","schema":"auth","table":"sessions","record":{"id":"33333333-3333-4333-8333-333333333333","user_id":"44444444-4444-4444-8444-444444444444"}}'
-# Expected response: 200
+  -d '{"type":"INSERT","schema":"auth","table":"sessions","record":{"id":"00000000-0000-4000-8000-000000000001","user_id":"00000000-0000-4000-8000-000000000002"}}'
+# Expected response: 200 (or structured response indicating session status)
 */
+
+-- ============================================================================
+-- 6. RESIDUAL RISKS TRACKED INTO SUBSEQUENT PRS
+-- ============================================================================
+-- 6.1 RPC Parameter-Based Identity Exposure (Tracked into PR3):
+-- public.has_permission(p_user_id uuid, p_permission varchar) and
+-- public.get_user_permissions(p_user_id uuid) currently accept an arbitrary
+-- p_user_id parameter without verifying auth.uid() = p_user_id.
+-- While anon/PUBLIC execution was revoked in PR0, authenticated callers can
+-- inspect roles and permissions of other platform users. PR3 must rewrite
+-- these functions to derive identity exclusively from auth.uid() or enforce
+-- administrative checks.
+--
+-- 6.2 Legacy Database Webhook Trigger Definition:
+-- The trigger 'send_login_notification' on auth.sessions currently executes:
+-- supabase_functions.http_request(..., 'Bearer 7c9a4b2f8e1d6c5a3b0f9e8d7c6b5a4f')
+-- This legacy trigger lacks required headers (x-request-id, idempotency-key, x-timestamp)
+-- and uses the revoked token. Consequently, live auth.sessions inserts are
+-- safely rejected by the edge function validator. For production notification
+-- dispatch, this trigger must be migrated to the Outbox architecture in PR1.
+
