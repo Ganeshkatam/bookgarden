@@ -3,7 +3,6 @@ export interface BookReaderDto {
   title: string;
   author: string;
   coverUrl: string | null;
-  fileUrl: string;
   fileType: "pdf" | "epub";
 }
 

@@ -29,7 +29,6 @@ import { safeStorage } from "@/shared/core/storage/privacy-storage";
 
 export class ReaderService {
   private renderer: ReaderRenderer | null = null;
-  private userId: string;
   private bookId: string;
   private storageKey: string;
 
@@ -57,14 +56,13 @@ export class ReaderService {
   private highlights: ReaderHighlight[] = [];
   private notes: ReaderNote[] = [];
   private bookmarks: ReaderBookmark[] = [];
+  userId: any;
 
   constructor(
-    userId: string,
     bookId: string,
     private initialSession?: ReaderSessionDto,
     private initialPreferences?: ReaderPreferencesDto,
   ) {
-    this.userId = userId;
     this.bookId = bookId;
     this.storageKey = `bookgarden_reader_pos_${bookId}`;
     this.sessionFacade = new ReaderSessionFacade(bookId);

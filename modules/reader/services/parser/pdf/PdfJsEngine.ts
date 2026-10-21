@@ -6,11 +6,7 @@ import type {
   DocumentMetadata,
 } from "@/modules/reader/application/ports/DocumentEngine";
 import * as pdfjsLib from "pdfjs-dist";
-
-// Configure the worker securely via CDN to avoid Next.js Webpack tangles
-if (typeof window !== "undefined" && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-}
+import { getPdfJsDocumentOptions } from "./pdfjs-config";
 
 export class PdfJsEngine implements DocumentEngine {
   private pdfDocument: pdfjsLib.PDFDocumentProxy | null = null;
@@ -22,9 +18,9 @@ export class PdfJsEngine implements DocumentEngine {
     await this.destroy();
 
     try {
-      const loadingTask = pdfjsLib.getDocument({
-        data: new Uint8Array(buffer),
-      });
+      const loadingTask = pdfjsLib.getDocument(
+        getPdfJsDocumentOptions({ data: new Uint8Array(buffer) }) as any,
+      );
       this.pdfDocument = await loadingTask.promise;
       this.pageCount = this.pdfDocument.numPages;
       console.log(`PDF Loaded successfully. Total Pages: ${this.pageCount}`);

@@ -8,9 +8,7 @@ import {
 import { ReaderPreferencesDto } from "../../../application/dto/ReaderPageDto";
 import { useReaderStore, SelectionRect } from "../../../state/reader-store";
 
-if (typeof window !== "undefined" && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-}
+import { getPdfJsDocumentOptions } from "./pdfjs-config";
 
 type PageState = {
   wrapper: HTMLDivElement;
@@ -95,12 +93,9 @@ export class PdfJsRenderer implements ReaderRenderer {
       ? encodeURI(decodeURI(bookUrl.trim()))
       : bookUrl.trim();
 
-    const loadingTask = pdfjsLib.getDocument({
-      url: safeUrl,
-      cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
-      cMapPacked: true,
-      standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`,
-    });
+    const loadingTask = pdfjsLib.getDocument(
+      getPdfJsDocumentOptions({ url: safeUrl }) as any,
+    );
     this.loadingTask = loadingTask;
     const pdfDocument = await loadingTask.promise;
 

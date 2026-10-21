@@ -130,7 +130,8 @@ describe("Reading Workspace End-to-End Integration", () => {
     const readerPage = await facade.getReaderPage(bookId);
 
     expect(readerPage.book.title).toBe("The Republic");
-    expect(readerPage.book.fileUrl).toContain("republic.pdf");
+    expect((readerPage.book as any).fileUrl).toBeUndefined();
+    expect(readerPage.book.fileType).toBe("pdf");
     expect(readerPage.preferences.theme).toBe("sepia");
     expect(readerPage.preferences.fontFamily).toBe("Georgia");
     expect(readerPage.session.position).toBeNull();

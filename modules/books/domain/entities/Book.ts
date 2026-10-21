@@ -79,9 +79,7 @@ export class Book extends AggregateRoot<BookProps> {
   }
 
   getPrimaryFile(): BookFile | null {
-    return (
-      this.props.files.find((f) => f.isPrimary) || this.props.files[0] || null
-    );
+    return this.props.files.find((f) => f.isPrimary) ?? null;
   }
 
   isPublicDomain(): boolean {

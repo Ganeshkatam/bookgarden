@@ -32,29 +32,12 @@ export class ReaderFacade {
     }
 
     const primaryFile = bookEntity.getPrimaryFile();
-    let fileUrl = primaryFile?.storagePath || "";
-
-    if (fileUrl) {
-      if (!fileUrl.startsWith("http://") && !fileUrl.startsWith("https://")) {
-        const cleanPath = fileUrl.replace(/^book-pdfs\//, "");
-        fileUrl = `https://qusuvzwycdmnecixzsgc.supabase.co/storage/v1/object/public/book-pdfs/${encodeURIComponent(cleanPath)}`;
-      } else {
-        // Ensure spaces and special characters in full storage URLs are properly encoded
-        try {
-          const parsed = new URL(fileUrl);
-          fileUrl = `${parsed.origin}${parsed.pathname.split("/").map((segment) => encodeURIComponent(decodeURIComponent(segment))).join("/")}${parsed.search}`;
-        } catch {
-          fileUrl = encodeURI(decodeURI(fileUrl));
-        }
-      }
-    }
 
     const book: BookReaderDto = {
       id: bookEntity.bookId.value,
       title: bookEntity.title,
       author: bookEntity.authors.join(", ") || "Unknown",
       coverUrl: bookEntity.coverUrl,
-      fileUrl,
       fileType: (primaryFile?.format as "pdf" | "epub") || "pdf",
     };
 

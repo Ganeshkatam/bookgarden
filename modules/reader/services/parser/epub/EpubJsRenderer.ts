@@ -6,7 +6,28 @@ import {
   ReaderHighlight,
 } from "@/shared/core/events/types";
 import { ReaderPreferencesDto } from "../../../application/dto/ReaderPageDto";
-import { SelectionRect } from "../../../state/reader-store";
+import { useReaderStore, SelectionRect } from "../../../state/reader-store";
+import { sanitizeEpubDocument, isolateEpubIframe } from "./epub-sanitizer";
+
+interface EpubContents {
+  document?: Document;
+  window?: Window;
+}
+
+interface EpubDocumentLocation {
+  start: { cfi: string };
+  end?: { cfi: string };
+}
+
+interface EpubSpineItem {
+  load: (loadFn: unknown) => Promise<unknown>;
+  find: (query: string) => Promise<unknown[]>;
+  unload: () => Promise<unknown>;
+}
+
+interface EpubSpine {
+  spineItems: EpubSpineItem[];
+}
 
 export class EpubJsRenderer implements ReaderRenderer {
   private book: Book | null = null;
@@ -101,6 +122,21 @@ export class EpubJsRenderer implements ReaderRenderer {
       flow: "scrolled", // Can be overridden by preferences
     });
 
+    // Register defensive content hook to sanitize hostile EPUB markup before render
+    this.rendition.hooks.content.register((contents: EpubContents) => {
+      try {
+        if (contents?.document) {
+          sanitizeEpubDocument(contents.document);
+        }
+        const iframe = container.querySelector("iframe");
+        if (iframe) {
+          isolateEpubIframe(iframe, contents?.window);
+        }
+      } catch (err) {
+        console.warn("[EpubJsRenderer] Error applying hostile content sanitization:", err);
+      }
+    });
+
     this.rendition.on("relocated", this.handleRelocated);
     this.rendition.on("selected", this.handleSelected);
 
@@ -133,9 +169,9 @@ export class EpubJsRenderer implements ReaderRenderer {
   async getProgress(): Promise<{ percentage: number; anchor: LocationAnchor }> {
     if (!this.rendition || !this.book)
       throw new Error("Renderer not initialized");
-    const location = this.rendition.currentLocation() as any;
-    const cfi = location.start.cfi;
-    const percentage = this.book.locations
+    const location = (this.rendition.currentLocation() as unknown) as EpubDocumentLocation | undefined;
+    const cfi = location?.start?.cfi || "";
+    const percentage = this.book.locations && cfi
       ? this.book.locations.percentageFromCfi(cfi)
       : 0;
     return {
@@ -205,17 +241,21 @@ export class EpubJsRenderer implements ReaderRenderer {
     // Show/hide note icon or popup next to highlight
   }
 
-  async search(query: string): Promise<any[]> {
+  async search(query: string): Promise<unknown[]> {
     if (!this.book) return [];
 
-    return Promise.all(
-      (this.book.spine as any).spineItems.map((item: any) =>
-        item
-          .load(this.book!.load.bind(this.book))
-          .then(item.find.bind(item, query))
-          .finally(item.unload.bind(item)),
-      ),
-    ).then((results) => Promise.resolve([].concat.apply([], results as any)));
+    const spine = (this.book.spine as unknown) as EpubSpine | undefined;
+    if (!spine || !Array.isArray(spine.spineItems)) return [];
+
+    const searchPromises = spine.spineItems.map((item) =>
+      item
+        .load(this.book!.load.bind(this.book))
+        .then(() => item.find(query))
+        .finally(() => item.unload()),
+    );
+
+    const results = await Promise.all(searchPromises);
+    return results.flat();
   }
 
   theme(themeName: "light" | "dark" | "sepia"): void {
