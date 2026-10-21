@@ -59,6 +59,7 @@ describe("SupabaseNotificationRepository", () => {
     });
 
     it("throws error when create_notification_idempotent RPC fails", async () => {
+      jest.spyOn(console, "error").mockImplementation(() => {});
       mockSupabase.rpc.mockResolvedValueOnce({
         error: new Error("RPC create_notification_idempotent failed"),
       });
@@ -79,6 +80,7 @@ describe("SupabaseNotificationRepository", () => {
     });
 
     it("throws error when standard insert fails", async () => {
+      jest.spyOn(console, "error").mockImplementation(() => {});
       mockSupabase.from.mockReturnValueOnce({
         insert: jest.fn().mockResolvedValueOnce({
           error: new Error("Direct insert failed"),
