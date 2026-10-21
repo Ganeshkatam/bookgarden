@@ -226,7 +226,7 @@ BEGIN
       ADD CONSTRAINT chk_book_files_storage_path_canonical
       CHECK (
         split_part(storage_path, '/', 1) = book_id::text
-        AND split_part(storage_path, '/', 2) ~ '^[a-zA-Z0-9._ ()\-'']+\.(pdf|epub)$'
+        AND split_part(storage_path, '/', 2) ~ '^[a-zA-Z0-9._ ()\-'',]+\.(pdf|epub)$'
         AND split_part(storage_path, '/', 3) = ''
         AND storage_path NOT LIKE '%..%'
         AND storage_path NOT LIKE '%\%'

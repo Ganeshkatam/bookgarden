@@ -73,8 +73,8 @@ export function assertCanonicalBookObjectKey(
     );
   }
 
-  // Filename positive validation: letters, digits, spaces, dots, dashes, underscores, parentheses, quotes
-  if (!filename || filename.length > 255 || !/^[a-zA-Z0-9._ ()\-']+$/.test(filename)) {
+  // Filename positive validation: letters, digits, spaces, dots, dashes, underscores, parentheses, quotes, commas
+  if (!filename || filename.length > 255 || !/^[a-zA-Z0-9._ ()\-',]+$/.test(filename)) {
     throw new ReaderAccessError(
       "Book content unavailable",
       500,

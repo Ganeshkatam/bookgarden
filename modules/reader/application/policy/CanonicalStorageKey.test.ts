@@ -3,7 +3,7 @@ import { ReaderAccessError } from "../errors/ReaderAccessError";
 
 describe("CanonicalStorageKey & Database Parity Invariants", () => {
   const bookId = "00000000-0000-0000-0000-000000000001";
-  const postgresRegex = /^[a-zA-Z0-9._ ()\-']+\.(pdf|epub)$/i;
+  const postgresRegex = /^[a-zA-Z0-9._ ()\-',]+\.(pdf|epub)$/i;
 
   describe("Application and Database Regex Parity", () => {
     const validFilenames = [
@@ -12,6 +12,7 @@ describe("CanonicalStorageKey & Database Parity Invariants", () => {
       "Maths Sutra (PDFDrive).pdf",
       "The Monk's Ferrari.pdf",
       "Everything_Science-v1.0.pdf",
+      "JavaScript, Coding, Programming (PDFDrive).pdf",
     ];
 
     const invalidFilenames = [

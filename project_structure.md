@@ -314,6 +314,7 @@ tomesphere-app
 │   │   ├── infrastructure
 │   │   │   ├── mappers
 │   │   │   │   ├── BookFileMapper.ts
+│   │   │   │   ├── BookMapper.test.ts
 │   │   │   │   └── BookMapper.ts
 │   │   │   ├── models
 │   │   │   │   └── BookRow.ts

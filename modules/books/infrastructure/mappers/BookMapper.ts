@@ -21,6 +21,9 @@ export class BookMapper {
       publishedDate: raw.release_date,
       pageCount: raw.pages,
       isTextbook: raw.is_textbook || false,
+      isPublished: raw.is_published ?? false,
+      isArchived: raw.is_archived ?? false,
+      version: raw.version ?? 1,
       subjects:
         (raw as any).book_subjects
           ?.map((bs: any) => bs.subjects?.name)
