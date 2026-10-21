@@ -1768,7 +1768,8 @@ tomesphere-app
 │   │   ├── 20260902000001_enable_avatar_storage_delete_policy.sql
 │   │   ├── 20261007000000_pr1_credential_and_outbox_incident.sql
 │   │   ├── 20261008000000_pr0_production_security_containment.sql
-│   │   └── 20261009000000_pr1_event_idempotency_and_deduplication.sql
+│   │   ├── 20261009000000_pr1_event_idempotency_and_deduplication.sql
+│   │   └── 20261022000000_rebrand_bookgarden_announcements_and_faqs.sql
 │   ├── config.toml
 │   └── schema_210726183034.sql
 ├── templates
