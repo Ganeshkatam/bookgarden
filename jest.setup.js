@@ -40,3 +40,6 @@ jest.mock("next/cache", () => ({
   revalidateTag: jest.fn(),
   unstable_cache: jest.fn((fn) => fn),
 }));
+
+jest.mock("server-only", () => ({}), { virtual: true });
+
