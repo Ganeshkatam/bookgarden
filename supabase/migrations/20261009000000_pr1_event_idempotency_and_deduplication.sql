@@ -83,7 +83,7 @@ $$;
 
 -- Privileges for notification creation RPC
 REVOKE ALL ON FUNCTION public.create_notification_idempotent(UUID, TEXT, UUID, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.create_notification_idempotent(UUID, TEXT, UUID, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB) TO service_role, tomesphere_worker;
+GRANT EXECUTE ON FUNCTION public.create_notification_idempotent(UUID, TEXT, UUID, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB) TO service_role, bookgarden_worker;
 
 
 -- ============================================================================
@@ -139,7 +139,7 @@ $$;
 
 -- Privileges for analytics book completed RPC
 REVOKE ALL ON FUNCTION public.record_analytics_book_completed_idempotent(UUID, UUID, UUID, DATE, VARCHAR, TEXT) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.record_analytics_book_completed_idempotent(UUID, UUID, UUID, DATE, VARCHAR, TEXT) TO service_role, tomesphere_worker;
+GRANT EXECUTE ON FUNCTION public.record_analytics_book_completed_idempotent(UUID, UUID, UUID, DATE, VARCHAR, TEXT) TO service_role, bookgarden_worker;
 
 
 CREATE OR REPLACE FUNCTION public.record_analytics_pages_read_idempotent(
@@ -186,4 +186,4 @@ $$;
 
 -- Privileges for analytics pages read RPC
 REVOKE ALL ON FUNCTION public.record_analytics_pages_read_idempotent(UUID, UUID, UUID, INTEGER, DATE, VARCHAR, TEXT) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.record_analytics_pages_read_idempotent(UUID, UUID, UUID, INTEGER, DATE, VARCHAR, TEXT) TO service_role, tomesphere_worker;
+GRANT EXECUTE ON FUNCTION public.record_analytics_pages_read_idempotent(UUID, UUID, UUID, INTEGER, DATE, VARCHAR, TEXT) TO service_role, bookgarden_worker;

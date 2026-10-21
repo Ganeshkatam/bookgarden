@@ -3,7 +3,7 @@ import { safeStorage } from "@/shared/core/storage/privacy-storage";
 
 const MAX_HISTORY = parseInt(process.env.NEXT_PUBLIC_MAX_HISTORY || "20", 10);
 const STORAGE_KEY =
-  process.env.NEXT_PUBLIC_RECENT_VIEWS_KEY || "tomesphere_recent_views";
+  process.env.NEXT_PUBLIC_RECENT_VIEWS_KEY || "bookgarden_recent_views";
 
 export interface ViewHistoryItem {
   book: BookDto;

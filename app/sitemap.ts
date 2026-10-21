@@ -2,7 +2,7 @@ import { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://tomesphere.in";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bookgarden.tomesphere.in";
   const currentDate = new Date().toISOString();
 
   // Public canonical routes for search engines

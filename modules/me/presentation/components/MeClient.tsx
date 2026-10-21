@@ -178,7 +178,7 @@ export function MeClient({ data }: MeClientProps) {
         <Suspense fallback={<BooksShelfSkeleton />}>
           <PublicSizedShelfSection
             title="Featured Masterpieces"
-            description="Handpicked literary discoveries from the TomeSphere collection."
+            description="Handpicked literary discoveries from the BookGarden collection."
             icon={<Star size={16} />}
             iconBg="bg-amber-50 dark:bg-amber-950/60 border-amber-200/60 dark:border-amber-800/60 text-amber-600 dark:text-amber-400"
             viewAllHref="/discover/featured"

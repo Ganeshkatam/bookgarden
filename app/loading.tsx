@@ -55,7 +55,7 @@ export default function Loading() {
         {/* Elegant Typography */}
         <div className="flex flex-col items-center gap-3">
           <h3 className="text-xl font-medium tracking-[0.25em] text-slate-50 uppercase font-display drop-shadow-md">
-            TomeSphere
+            BookGarden
           </h3>
           {/* Minimal progress bar */}
           <div className="w-16 h-[2px] bg-[var(--border-default)] rounded-full overflow-hidden relative">

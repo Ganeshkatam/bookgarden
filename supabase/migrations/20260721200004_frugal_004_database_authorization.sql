@@ -1,7 +1,7 @@
 -- Frugal Migration 004: Database Authorization Lockdown
 -- Purpose: Revoke execution privileges for all background/infrastructure 
 -- capabilities from the public data API roles to prevent abuse.
--- These functions are now executed via the 'internal' schema by 'tomesphere_worker'.
+-- These functions are now executed via the 'internal' schema by 'bookgarden_worker'.
 
 -- Lock down legacy public infrastructure RPCs (until dropped)
 REVOKE EXECUTE ON FUNCTION public.claim_outbox_events(integer) FROM PUBLIC, anon, authenticated;

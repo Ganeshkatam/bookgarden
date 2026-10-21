@@ -13,7 +13,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "About Our Digital Archive",
   description:
-    "Learn more about TomeSphere, our mission to preserve public domain literature, and our reading platform.",
+    "Learn more about BookGarden, our mission to preserve public domain literature, and our reading platform.",
 };
 
 export const revalidate = 3600; // Cache for 1 hour
@@ -58,7 +58,7 @@ export default async function AboutPage() {
               </span>
             </h1>
             <p className="text-xl sm:text-2xl text-[var(--text-secondary)] max-w-3xl mx-auto leading-relaxed">
-              TomeSphere is a next-generation platform built for book lovers. We
+              BookGarden is a next-generation platform built for book lovers. We
               blend artificial intelligence, rich taxonomies, and thoughtful
               design to help you discover, track, and enjoy literature like
               never before.
@@ -115,7 +115,7 @@ export default async function AboutPage() {
               <div className="relative aspect-square rounded-3xl overflow-hidden bg-[var(--surface-default)] border border-[var(--border-default)] shadow-xl group">
                 <Image
                   src="/about_showcase.jpg"
-                  alt="A Universe of Books - TomeSphere Reading Workspace"
+                  alt="A Universe of Books - BookGarden Reading Workspace"
                   fill
                   className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
                   sizes="(max-width: 768px) 100vw, 50vw"
@@ -140,7 +140,7 @@ export default async function AboutPage() {
             <SlideUp delay={0.2}>
               <div>
                 <h2 className="text-3xl sm:text-4xl font-display font-bold mb-6 text-[var(--text-primary)]">
-                  Why We Built TomeSphere
+                  Why We Built BookGarden
                 </h2>
                 <div className="space-y-6 text-[var(--text-secondary)] text-lg leading-relaxed">
                   <p>
@@ -150,8 +150,8 @@ export default async function AboutPage() {
                     journey has often felt fragmented across disjointed platforms.
                   </p>
                   <p>
-                    TomeSphere was created to solve this. We wanted a single,
-                    unified sphere where readers could discover new literature,
+                    BookGarden was created to solve this. We wanted a single,
+                    unified sanctuary where readers could discover new literature,
                     track their reading progress, take notes, and explore structured
                     subjects and genres.
                   </p>
@@ -212,7 +212,7 @@ export default async function AboutPage() {
             {/* Background Illustration */}
             <Image
               src="/about_cta_banner.jpg"
-              alt="TomeSphere Grand Library Experience"
+              alt="BookGarden Grand Library Experience"
               fill
               className="object-cover object-center group-hover:scale-105 transition-transform duration-700 pointer-events-none"
               sizes="100vw"
@@ -229,7 +229,7 @@ export default async function AboutPage() {
                 Ready to start your journey?
               </h2>
               <p className="text-lg sm:text-xl text-slate-200 mb-8 max-w-xl mx-auto leading-relaxed drop-shadow-sm">
-                Join readers who have made TomeSphere their home for focused, distraction-free literature.
+                Join readers who have made BookGarden their home for focused, distraction-free literature.
               </p>
               <Link
                 href="/signup"

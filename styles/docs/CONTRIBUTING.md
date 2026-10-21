@@ -1,6 +1,6 @@
 # Design System Contributor Guide
 
-Follow these guidelines when contributing new styles or components to TomeSphere.
+Follow these guidelines when contributing new styles or components to BookGarden.
 
 ## 1. When to add a new token
 

@@ -13,14 +13,14 @@ describe("WorkerDatabaseClient", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.TOMESPHERE_WORKER_DATABASE_URL = "postgres://tomesphere_worker:pass@localhost:5432/postgres";
+    process.env.BOOKGARDEN_WORKER_DATABASE_URL = "postgres://bookgarden_worker:pass@localhost:5432/postgres";
     // Reset cached pool
-    delete (globalThis as any).__tomesphereWorkerPool;
+    delete (globalThis as any).__bookgardenWorkerPool;
     mockPool = (new Pool() as any);
   });
 
   afterEach(() => {
-    delete (globalThis as any).__tomesphereWorkerPool;
+    delete (globalThis as any).__bookgardenWorkerPool;
   });
 
   describe("claimOutboxEvents", () => {

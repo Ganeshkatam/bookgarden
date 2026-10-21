@@ -132,6 +132,10 @@ tomesphere-app
 │   ├── template.tsx
 │   └── theme-init.ts
 ├── components
+│   ├── cookies
+│   │   ├── CookieConsentBanner.test.tsx
+│   │   ├── CookieConsentBanner.tsx
+│   │   └── ManageCookiesButton.tsx
 │   └── ui
 │       ├── button.tsx
 │       ├── card.tsx
@@ -153,6 +157,7 @@ tomesphere-app
 │   │   │   └── event-handlers
 │   │   │       └── AnalyticsEventHandlers.ts
 │   │   ├── infrastructure
+│   │   │   ├── SupabaseAnalyticsProjectionStore.test.ts
 │   │   │   └── SupabaseAnalyticsProjectionStore.ts
 │   │   └── AnalyticsModule.ts
 │   ├── announcements
@@ -462,6 +467,7 @@ tomesphere-app
 │   │   │   ├── application
 │   │   │   │   ├── event-handlers
 │   │   │   │   │   ├── RecommendationHandlers.ts
+│   │   │   │   │   ├── RecommendationSignalEventHandlers.test.ts
 │   │   │   │   │   └── RecommendationSignalEventHandlers.ts
 │   │   │   │   ├── pipeline
 │   │   │   │   │   ├── CandidateRetriever.ts
@@ -1018,6 +1024,7 @@ tomesphere-app
 │   │   │   │   └── INotificationRepository.ts
 │   │   │   └── Notification.ts
 │   │   ├── infrastructure
+│   │   │   ├── SupabaseNotificationRepository.test.ts
 │   │   │   └── SupabaseNotificationRepository.ts
 │   │   ├── presentation
 │   │   │   ├── actions
@@ -1232,9 +1239,11 @@ tomesphere-app
 │   │   │   ├── viewer
 │   │   │   │   └── Viewer.tsx
 │   │   │   ├── ClientReaderShell.tsx
+│   │   │   ├── HighlightContextMenu.test.tsx
 │   │   │   ├── HighlightContextMenu.tsx
 │   │   │   ├── HighlightPopup.tsx
 │   │   │   ├── NoteEditor.tsx
+│   │   │   ├── NoteHoverTooltip.test.tsx
 │   │   │   ├── NoteHoverTooltip.tsx
 │   │   │   └── ReaderShell.tsx
 │   │   ├── domain
@@ -1292,6 +1301,7 @@ tomesphere-app
 │   │   │   ├── MfaPolicy.ts
 │   │   │   └── RateLimiter.ts
 │   │   └── infrastructure
+│   │       ├── PostgresAuditLogger.test.ts
 │   │       ├── PostgresAuditLogger.ts
 │   │       ├── SupabaseAuthenticationProvider.ts
 │   │       └── SupabaseRateLimiter.ts
@@ -1439,7 +1449,9 @@ tomesphere-app
 │   ├── icon.png
 │   ├── library_bg.png
 │   ├── logo.png
+│   ├── logo.svg
 │   └── mock-document.pdf
+├── scratch
 ├── scripts
 │   ├── sanitize-codebase.mjs
 │   └── update-tree.mjs
@@ -1465,20 +1477,30 @@ tomesphere-app
 │   ├── core
 │   │   ├── application
 │   │   │   └── UseCaseResult.ts
+│   │   ├── auth
+│   │   │   └── SendLoginEmailWebhook.test.ts
 │   │   ├── components
 │   │   │   └── GlobalErrorBoundary.tsx
 │   │   ├── database
+│   │   │   ├── admin.ts
 │   │   │   ├── client.ts
 │   │   │   ├── database.types.ts
 │   │   │   └── server.ts
 │   │   ├── events
+│   │   │   ├── EventBus.test.ts
 │   │   │   ├── EventBus.ts
+│   │   │   ├── payload-validators.test.ts
+│   │   │   ├── payload-validators.ts
 │   │   │   └── types.ts
 │   │   ├── infrastructure
 │   │   │   └── outbox
 │   │   │       └── outbox.ts
 │   │   ├── jobs
+│   │   │   ├── outbox-relay.test.ts
 │   │   │   └── outbox-relay.ts
+│   │   ├── storage
+│   │   │   ├── privacy-storage.test.ts
+│   │   │   └── privacy-storage.ts
 │   │   ├── types
 │   │   │   ├── database.ts
 │   │   │   ├── LibraryReadModels.ts
@@ -1495,6 +1517,8 @@ tomesphere-app
 │   │   └── usePhotoUploadPermission.ts
 │   ├── infrastructure
 │   │   ├── database
+│   │   │   ├── OutboxTrustBoundary.test.ts
+│   │   │   ├── WorkerDatabaseClient.test.ts
 │   │   │   └── WorkerDatabaseClient.ts
 │   │   ├── events
 │   │   │   ├── DomainEventPublisher.test.ts
@@ -1636,11 +1660,14 @@ tomesphere-app
 │   │   ├── rest-version
 │   │   ├── storage-migration
 │   │   └── storage-version
+│   ├── certification
+│   │   └── pr0_certification_checks.sql
 │   ├── functions
 │   │   └── send-login-email
 │   │       ├── .npmrc
 │   │       ├── deno.json
-│   │       └── index.ts
+│   │       ├── index.ts
+│   │       └── validator.ts
 │   ├── migrations
 │   │   ├── 20260716221802_domain_schema_normalization.sql
 │   │   ├── 20260717000000_add_biography_to_profiles.sql
@@ -1736,7 +1763,12 @@ tomesphere-app
 │   │   ├── 20260828010000_retire_export_requests.sql
 │   │   ├── 20260828020000_repair_authorization_foundation.sql
 │   │   ├── 20260829000000_set_default_profile_bio.sql
-│   │   └── 20260829010000_grant_trending_searches_permissions.sql
+│   │   ├── 20260829010000_grant_trending_searches_permissions.sql
+│   │   ├── 20260902000000_create_shelves_storage_bucket.sql
+│   │   ├── 20260902000001_enable_avatar_storage_delete_policy.sql
+│   │   ├── 20261007000000_pr1_credential_and_outbox_incident.sql
+│   │   ├── 20261008000000_pr0_production_security_containment.sql
+│   │   └── 20261009000000_pr1_event_idempotency_and_deduplication.sql
 │   ├── config.toml
 │   └── schema_210726183034.sql
 ├── templates

@@ -11,22 +11,23 @@ export interface CookiePreferences {
   consentTimestamp: string;
 }
 
-export const COOKIE_CONSENT_STORAGE_KEY = "tomesphere_cookie_consent";
+export const COOKIE_CONSENT_STORAGE_KEY = "bookgarden_cookie_consent";
 
 /**
  * Known non-essential localStorage keys used across the platform.
  */
 const NON_ESSENTIAL_KEY_PREFIXES = [
-  "tomesphere_recent_searches",
-  "tomesphere_view_history",
-  "tomesphere_reading_pos_",
-  "tomesphere_reading_progress_",
-  "tomesphere_announcement_seen_",
-  "tomesphere_announcement_banner_dismissed_",
-  "tomesphere_top_banner_dismissed_",
-  "tomesphere_tour_",
-  "tomesphere_welcome_tour_",
-  "tomesphere_reader_dwell",
+  "bookgarden_recent_searches",
+  "bookgarden_view_history",
+  "bookgarden_reading_pos_",
+  "bookgarden_reading_progress_",
+  "bookgarden_announcement_seen_",
+  "bookgarden_announcement_banner_dismissed_",
+  "bookgarden_top_banner_dismissed_",
+  "bookgarden_tour_",
+  "bookgarden_welcome_tour_",
+  "bookgarden_reader_dwell",
+  "bookgarden-theme",
   "theme",
 ];
 

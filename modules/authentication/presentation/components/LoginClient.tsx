@@ -151,7 +151,7 @@ export default function EnhancedLoginPage() {
         setResendTimer(90);
         setStep("otp");
       } else {
-        sessionStorage.setItem("tomesphere_pending_email", id);
+        sessionStorage.setItem("bookgarden_pending_email", id);
         router.push("/verify-email");
       }
     } catch (err: any) {
@@ -367,7 +367,7 @@ export default function EnhancedLoginPage() {
             <div className="relative w-11 h-11 rounded-xl overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md shadow-indigo-500/10 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
               <Image
                 src="/logo.png"
-                alt="TomeSphere Logo"
+                alt="BookGarden Logo"
                 width={44}
                 height={44}
                 className="object-contain p-0.5"
@@ -376,7 +376,7 @@ export default function EnhancedLoginPage() {
             </div>
             <div>
               <span className="text-xl font-display font-bold text-slate-900 dark:text-white">
-                TomeSphere
+                BookGarden
               </span>
               <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] mt-0.5">
                 READ • LEARN • REMEMBER
@@ -799,7 +799,7 @@ export default function EnhancedLoginPage() {
           {/* Footer sign up & legal links */}
           <div className="space-y-5 mt-8 border-t border-slate-200 dark:border-slate-800 pt-6 text-center">
             <div className="text-slate-600 dark:text-slate-400 text-sm">
-              New to TomeSphere?{" "}
+              New to BookGarden?{" "}
               <Link
                 href="/signup"
                 className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold transition-colors"

@@ -101,31 +101,31 @@ textarea:disabled {
 }
 
 /* Explicit scrollbar styles just for the PDF Reader container */
-.tomesphere-pdf-scroll-container::-webkit-scrollbar {
+.bookgarden-pdf-scroll-container::-webkit-scrollbar {
   display: block !important;
   width: 14px !important;
   height: 14px !important;
   background: transparent !important;
 }
 
-.tomesphere-pdf-scroll-container::-webkit-scrollbar-track {
+.bookgarden-pdf-scroll-container::-webkit-scrollbar-track {
   background: transparent !important;
 }
 
-.tomesphere-pdf-scroll-container::-webkit-scrollbar-thumb {
+.bookgarden-pdf-scroll-container::-webkit-scrollbar-thumb {
   background: rgba(150, 150, 150, 0.4) !important;
   border: 4px solid transparent !important;
   background-clip: padding-box !important;
   border-radius: 9999px !important;
 }
 
-.tomesphere-pdf-scroll-container::-webkit-scrollbar-thumb:hover {
+.bookgarden-pdf-scroll-container::-webkit-scrollbar-thumb:hover {
   background: rgba(150, 150, 150, 0.6) !important;
   border: 4px solid transparent !important;
   background-clip: padding-box !important;
 }
 
-.tomesphere-pdf-scroll-container {
+.bookgarden-pdf-scroll-container {
   scrollbar-width: thin !important;
   scrollbar-color: rgba(150, 150, 150, 0.4) transparent !important;
 }

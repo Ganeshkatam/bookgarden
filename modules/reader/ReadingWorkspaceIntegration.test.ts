@@ -45,7 +45,7 @@ describe("Reading Workspace End-to-End Integration", () => {
       currentUserId: jest.fn().mockResolvedValue(userId),
       currentUser: jest.fn().mockResolvedValue({
         id: userId,
-        email: "scholar@tomesphere.in",
+        email: "scholar@bookgarden.tomesphere.in",
         name: "Archival Scholar",
       }),
       isAuthenticated: jest.fn().mockResolvedValue(true),
@@ -57,7 +57,7 @@ describe("Reading Workspace End-to-End Integration", () => {
       title: "The Republic",
       authors: ["Plato"],
       description: "Ancient philosophy on justice and the state.",
-      coverUrl: "https://tomesphere.in/covers/republic.jpg",
+      coverUrl: "https://bookgarden.tomesphere.in/covers/republic.jpg",
       pageCount: 416,
       isTextbook: false,
       files: [

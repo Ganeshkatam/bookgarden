@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Featured Masterpieces & Editor's Picks",
-  description: "Explore hand-picked, curated literary treasures and foundational books on TomeSphere.",
+  description: "Explore hand-picked, curated literary treasures and foundational books on BookGarden.",
 };
 
 export default async function FeaturedPage() {

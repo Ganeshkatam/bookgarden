@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
-  description: "Read the terms and conditions governing the use of the TomeSphere digital reading platform.",
+  description: "Read the terms and conditions governing the use of the BookGarden digital reading platform.",
 };
 
 export default function TermsPage() {
@@ -18,7 +18,7 @@ export default function TermsPage() {
           </p>
           <div className="prose prose-lg max-w-none text-[var(--text-secondary)] space-y-6">
             <p>
-              By accessing the TomeSphere application, you agree to be bound by
+              By accessing the BookGarden application, you agree to be bound by
               these terms of service and all applicable laws and regulations.
             </p>
 
@@ -27,7 +27,7 @@ export default function TermsPage() {
             </h2>
             <p>
               Permission is granted to temporarily view materials
-              (information or books) on TomeSphere for personal,
+              (information or books) on BookGarden for personal,
               non-commercial transitory viewing only.
             </p>
 

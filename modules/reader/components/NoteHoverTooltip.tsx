@@ -72,7 +72,7 @@ export function NoteHoverTooltip({ onEditNote }: NoteHoverTooltipProps) {
     noteMap.forEach((note, highlightId) => {
       // If a native badge is already rendered in the document layer, do not duplicate
       const nativeBadge = document.querySelector(
-        `.tomesphere-note-badge[data-note-indicator-badge="${highlightId}"]`,
+        `.bookgarden-note-badge[data-note-indicator-badge="${highlightId}"]`,
       );
       if (nativeBadge) return;
 
@@ -123,7 +123,7 @@ export function NoteHoverTooltip({ onEditNote }: NoteHoverTooltipProps) {
       updateBadges();
     });
 
-    const target = document.querySelector(".tomesphere-viewer-scroll") || document.body;
+    const target = document.querySelector(".bookgarden-viewer-scroll") || document.body;
     observer.observe(target, { childList: true, subtree: true });
 
     const interval = setInterval(updateBadges, 800);

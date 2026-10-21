@@ -23,8 +23,8 @@ type PageState = {
   isIntersecting: boolean;
 };
 
-const PAGE_CLASS = "tomesphere-pdf-page";
-const PAGE_PLACEHOLDER_CLASS = "tomesphere-pdf-page-placeholder";
+const PAGE_CLASS = "bookgarden-pdf-page";
+const PAGE_PLACEHOLDER_CLASS = "bookgarden-pdf-page-placeholder";
 const VIRTUALIZATION_ROOT_MARGIN = "250% 0px";
 const MAX_RENDERED_PAGES = 18;
 const MAX_DEVICE_PIXEL_RATIO = 2;
@@ -89,7 +89,7 @@ export class PdfJsRenderer implements ReaderRenderer {
     container.style.overscrollBehavior = "contain";
     container.style.touchAction = "pan-y";
     (container.style as any).webkitOverflowScrolling = "touch";
-    container.classList.add("tomesphere-pdf-scroll-container");
+    container.classList.add("bookgarden-pdf-scroll-container");
 
     const safeUrl = bookUrl.startsWith("http")
       ? encodeURI(decodeURI(bookUrl.trim()))
@@ -581,7 +581,7 @@ export class PdfJsRenderer implements ReaderRenderer {
 
     // 5. Canvas Element Setup: Backing buffer scaled to device pixels with strict maxWidth guard
     const canvas = document.createElement("canvas");
-    canvas.className = "tomesphere-pdf-canvas";
+    canvas.className = "bookgarden-pdf-canvas";
     canvas.width = Math.max(1, Math.floor(viewport.width * outputScale));
     canvas.height = Math.max(1, Math.floor(viewport.height * outputScale));
     canvas.style.display = "block";
@@ -635,7 +635,7 @@ export class PdfJsRenderer implements ReaderRenderer {
     }
 
     const pageContainer = document.createElement("div");
-    pageContainer.className = "tomesphere-pdf-page-container";
+    pageContainer.className = "bookgarden-pdf-page-container";
     pageContainer.style.position = "relative";
     pageContainer.style.width = `${viewport.width}px`;
     pageContainer.style.height = `${viewport.height}px`;
@@ -657,7 +657,7 @@ export class PdfJsRenderer implements ReaderRenderer {
 
     // Highlight overlay layer -- sits between canvas and text layer
     const highlightLayer = document.createElement("div");
-    highlightLayer.className = "tomesphere-pdf-highlight-layer";
+    highlightLayer.className = "bookgarden-pdf-highlight-layer";
     highlightLayer.style.position = "absolute";
     highlightLayer.style.inset = "0";
     highlightLayer.style.pointerEvents = "none";
@@ -667,7 +667,7 @@ export class PdfJsRenderer implements ReaderRenderer {
 
     // Interactive Text Layer for selectable text, highlights, and note creation
     const textLayerDiv = document.createElement("div");
-    textLayerDiv.className = "tomesphere-pdf-text-layer textLayer";
+    textLayerDiv.className = "bookgarden-pdf-text-layer textLayer";
     textLayerDiv.style.position = "absolute";
     textLayerDiv.style.inset = "0";
     textLayerDiv.style.width = `${viewport.width}px`;
@@ -770,7 +770,7 @@ export class PdfJsRenderer implements ReaderRenderer {
 
     // Interactive PDF Hyperlinks & TOC Destinations Layer
     const linkLayer = document.createElement("div");
-    linkLayer.className = "tomesphere-pdf-link-layer";
+    linkLayer.className = "bookgarden-pdf-link-layer";
     linkLayer.style.position = "absolute";
     linkLayer.style.left = "0";
     linkLayer.style.top = "0";
@@ -798,7 +798,7 @@ export class PdfJsRenderer implements ReaderRenderer {
           linkEl.style.pointerEvents = "auto";
           linkEl.style.cursor = "pointer";
           linkEl.style.borderRadius = "2px";
-          linkEl.className = "tomesphere-pdf-link hover:bg-indigo-500/15 hover:ring-1 hover:ring-indigo-500/30 transition-all";
+          linkEl.className = "bookgarden-pdf-link hover:bg-indigo-500/15 hover:ring-1 hover:ring-indigo-500/30 transition-all";
 
           if (annot.url) {
             linkEl.href = annot.url;
@@ -1087,15 +1087,15 @@ export class PdfJsRenderer implements ReaderRenderer {
     if (!state?.wrapper) return;
 
     const pageContainer = state.wrapper.querySelector<HTMLDivElement>(
-      ".tomesphere-pdf-page-container",
+      ".bookgarden-pdf-page-container",
     );
     if (!pageContainer) return;
 
     const highlightLayer = pageContainer.querySelector<HTMLDivElement>(
-      ".tomesphere-pdf-highlight-layer",
+      ".bookgarden-pdf-highlight-layer",
     );
     const textLayer = pageContainer.querySelector<HTMLDivElement>(
-      ".tomesphere-pdf-text-layer",
+      ".bookgarden-pdf-text-layer",
     );
     if (!highlightLayer || !textLayer) return;
 
@@ -1264,7 +1264,7 @@ export class PdfJsRenderer implements ReaderRenderer {
       const badge = document.createElement("div");
       badge.dataset.noteIndicatorBadge = highlight.id;
       badge.dataset.highlightId = highlight.id;
-      badge.className = "tomesphere-note-badge";
+      badge.className = "bookgarden-note-badge";
       badge.style.position = "absolute";
       badge.style.left = `${rightAnchor - 6}px`;
       badge.style.top = `${topRect.top - 8}px`;
@@ -1303,10 +1303,10 @@ export class PdfJsRenderer implements ReaderRenderer {
   async removeHighlight(id: string): Promise<void> {
     this.highlightsMap.delete(id);
     // Remove overlay rectangles
-    document.querySelectorAll(`.tomesphere-pdf-highlight-layer [data-highlight-id="${id}"]`)
+    document.querySelectorAll(`.bookgarden-pdf-highlight-layer [data-highlight-id="${id}"]`)
       .forEach((el) => el.remove());
     // Remove click handlers from text spans
-    document.querySelectorAll(`.tomesphere-pdf-text-layer [data-highlight-id="${id}"]`)
+    document.querySelectorAll(`.bookgarden-pdf-text-layer [data-highlight-id="${id}"]`)
       .forEach((el) => {
         el.removeAttribute("data-highlight-id");
         (el as HTMLElement).style.cursor = "";
@@ -1360,7 +1360,7 @@ export class PdfJsRenderer implements ReaderRenderer {
     const filter = filterStyles[themeName] || "none";
 
     for (const state of this.pageStates.values()) {
-      const pageContainer = state.wrapper.querySelector<HTMLElement>(".tomesphere-pdf-page-container");
+      const pageContainer = state.wrapper.querySelector<HTMLElement>(".bookgarden-pdf-page-container");
       if (pageContainer) {
         pageContainer.style.filter = filter;
       } else if (state.canvas) {

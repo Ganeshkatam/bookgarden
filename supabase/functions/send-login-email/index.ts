@@ -158,7 +158,7 @@ serve(async (req: Request) => {
 
     // 8. Dispatch Email via Brevo API
     const brevoApiKey = Deno.env.get("BREVO_API_KEY");
-    const senderEmail = Deno.env.get("SENDER_EMAIL") || "noreply@tomesphere.in";
+    const senderEmail = Deno.env.get("SENDER_EMAIL") || "noreply@bookgarden.tomesphere.in";
 
     if (!brevoApiKey) {
       console.error("[send-login-email] Missing BREVO_API_KEY secret");
@@ -182,7 +182,7 @@ serve(async (req: Request) => {
           
           <div style="text-align: center; margin-bottom: 32px;">
             <h1 style="margin: 0; font-size: 24px; color: #111827; font-weight: 700; letter-spacing: -0.5px;">
-              TomeSphere
+              BookGarden
             </h1>
           </div>
           
@@ -197,7 +197,7 @@ serve(async (req: Request) => {
           </h2>
           
           <p style="color: #4b5563; font-size: 16px; line-height: 24px; margin-bottom: 32px; text-align: center;">
-            We noticed a new sign-in to your TomeSphere account. Here are the details of the session:
+            We noticed a new sign-in to your BookGarden account. Here are the details of the session:
           </p>
           
           <div style="background-color: #f9fafb; border: 1px solid #f3f4f6; border-radius: 12px; padding: 24px; margin-bottom: 32px;">
@@ -221,14 +221,14 @@ serve(async (req: Request) => {
           
           <p style="color: #6b7280; font-size: 14px; line-height: 22px; text-align: center; margin-bottom: 0;">
             If this was you, you can safely ignore this email.<br/><br/>
-            If you don't recognize this activity, please <a href="https://tomesphere.in/security" style="color: #4f46e5; text-decoration: none; font-weight: 600;">secure your account</a> immediately.
+            If you don't recognize this activity, please <a href="https://bookgarden.tomesphere.in/security" style="color: #4f46e5; text-decoration: none; font-weight: 600;">secure your account</a> immediately.
           </p>
           
         </div>
         
         <div style="text-align: center; margin-top: 32px;">
           <p style="color: #9ca3af; font-size: 12px; line-height: 18px;">
-            &copy; ${new Date().getFullYear()} TomeSphere. All rights reserved.<br/>
+            &copy; ${new Date().getFullYear()} BookGarden. All rights reserved.<br/>
             This is an automated security notification.
           </p>
         </div>
@@ -242,9 +242,9 @@ serve(async (req: Request) => {
         "api-key": brevoApiKey,
       },
       body: JSON.stringify({
-        sender: { email: senderEmail, name: "TomeSphere Security" },
+        sender: { email: senderEmail, name: "BookGarden Security" },
         to: [{ email: userEmail }],
-        subject: "New sign-in to your TomeSphere account",
+        subject: "New sign-in to your BookGarden account",
         htmlContent: htmlContent,
       }),
     });

@@ -231,13 +231,13 @@ $$;
 REVOKE ALL ON SCHEMA internal FROM PUBLIC;
 REVOKE ALL ON SCHEMA internal FROM anon;
 REVOKE ALL ON SCHEMA internal FROM authenticated;
-GRANT USAGE ON SCHEMA internal TO tomesphere_worker;
+GRANT USAGE ON SCHEMA internal TO bookgarden_worker;
 
 -- Function-level privileges
 REVOKE ALL ON FUNCTION internal.claim_outbox_events(integer, text, integer) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION internal.complete_outbox_event(uuid, uuid, text, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION internal.get_outbox_metrics() FROM PUBLIC, anon, authenticated;
 
-GRANT EXECUTE ON FUNCTION internal.claim_outbox_events(integer, text, integer) TO tomesphere_worker;
-GRANT EXECUTE ON FUNCTION internal.complete_outbox_event(uuid, uuid, text, text) TO tomesphere_worker;
-GRANT EXECUTE ON FUNCTION internal.get_outbox_metrics() TO tomesphere_worker;
+GRANT EXECUTE ON FUNCTION internal.claim_outbox_events(integer, text, integer) TO bookgarden_worker;
+GRANT EXECUTE ON FUNCTION internal.complete_outbox_event(uuid, uuid, text, text) TO bookgarden_worker;
+GRANT EXECUTE ON FUNCTION internal.get_outbox_metrics() TO bookgarden_worker;

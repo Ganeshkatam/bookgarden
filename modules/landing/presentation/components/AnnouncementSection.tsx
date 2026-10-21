@@ -137,7 +137,7 @@ export default function AnnouncementSection({
             Announcements
           </h2>
           <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 mt-2 max-w-2xl leading-relaxed">
-            Discover what&apos;s newly launched across TomeSphere, enhanced reader capabilities, and platform updates.
+            Discover what&apos;s newly launched across BookGarden, enhanced reader capabilities, and platform updates.
           </p>
         </div>
 
@@ -212,7 +212,7 @@ export default function AnnouncementSection({
               {/* Action Footer */}
               <CardFooter className="p-0 pt-6 border-t border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between gap-4 flex-wrap">
                 <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                  TomeSphere Platform Notice
+                  BookGarden Platform Notice
                 </span>
 
                 {announcement.linkUrl && announcement.linkText ? (

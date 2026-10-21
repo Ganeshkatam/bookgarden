@@ -102,7 +102,7 @@ export function PhotoUploadConsentModal({
               {title}
             </h3>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-              Tomesphere requires your permission to upload and store this photo.
+              BookGarden requires your permission to upload and store this photo.
             </p>
           </div>
 
@@ -141,7 +141,7 @@ export function PhotoUploadConsentModal({
             <div className="space-y-1.5 text-[11px] text-slate-400">
               <div className="flex items-start gap-2">
                 <CloudUpload size={13} className="text-indigo-400 shrink-0 mt-0.5" />
-                <span>Upload and securely store the photo in Tomesphere Cloud Storage.</span>
+                <span>Upload and securely store the photo in BookGarden Cloud Storage.</span>
               </div>
               <div className="flex items-start gap-2">
                 <Eye size={13} className="text-indigo-400 shrink-0 mt-0.5" />

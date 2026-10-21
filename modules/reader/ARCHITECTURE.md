@@ -1,6 +1,6 @@
 # Reader Domain Architecture
 
-This module is the **highest-complexity, highest-performance-pressure subsystem** in TomeSphere. It must be treated with extreme architectural rigor.
+This module is the **highest-complexity, highest-performance-pressure subsystem** in BookGarden. It must be treated with extreme architectural rigor.
 
 ##  Core Directives
 

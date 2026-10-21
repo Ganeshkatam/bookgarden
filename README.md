@@ -1,14 +1,14 @@
-# TomeSphere
+# BookGarden
 
-[![Website](https://img.shields.io/badge/Website-tomesphere.in-4f46e5?style=flat-square)](https://tomesphere.in)
+[![Website](https://img.shields.io/badge/Website-bookgarden.tomesphere.in-4f46e5?style=flat-square)](https://bookgarden.tomesphere.in)
 
-TomeSphere is a next-generation digital reading platform and knowledge archive built with clean architecture, domain-driven design, and a modern web technology stack.
+BookGarden is a next-generation digital reading platform and knowledge archive built with clean architecture, domain-driven design, and a modern web technology stack.
 
 ---
 
 ## Overview
 
-TomeSphere provides readers, students, and researchers with a focused, distraction-free environment to discover, read, annotate, and organize literature. The platform combines full-text catalog search, normalized subject taxonomies, customizable personal bookshelves, and an integrated reader experience with cross-device reading progress.
+BookGarden provides readers, students, and researchers with a focused, distraction-free environment to discover, read, annotate, and organize literature. The platform combines full-text catalog search, normalized subject taxonomies, customizable personal bookshelves, and an integrated reader experience with cross-device reading progress.
 
 ---
 
@@ -47,8 +47,8 @@ TomeSphere provides readers, students, and researchers with a focused, distracti
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/Ganeshkatam/tomesphere.git
-   cd tomesphere
+   git clone https://github.com/Ganeshkatam/bookgarden.git
+   cd bookgarden
    ```
 
 2. Install dependencies:

@@ -66,7 +66,7 @@ export class ReaderService {
   ) {
     this.userId = userId;
     this.bookId = bookId;
-    this.storageKey = `tomesphere_reader_pos_${bookId}`;
+    this.storageKey = `bookgarden_reader_pos_${bookId}`;
     this.sessionFacade = new ReaderSessionFacade(bookId);
   }
 

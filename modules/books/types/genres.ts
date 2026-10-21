@@ -1,4 +1,4 @@
-// Canonical list of all normalized book genres for TomeSphere
+// Canonical list of all normalized book genres for BookGarden
 export const ALL_GENRES = [
   "Art",
   "Biography",

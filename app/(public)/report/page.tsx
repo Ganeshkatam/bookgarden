@@ -58,7 +58,7 @@ export default function ReportPage() {
             Report an Issue
           </h1>
           <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl">
-            Help us keep Tomesphere safe and running smoothly. Our Trust & Safety team reviews all submissions promptly.
+            Help us keep BookGarden safe and running smoothly. Our Trust & Safety team reviews all submissions promptly.
           </p>
         </div>
 

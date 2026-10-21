@@ -33,13 +33,13 @@ export default class GlobalErrorBoundary extends React.Component<
       return (
         <div className="min-h-screen bg-[var(--surface-canvas)] flex flex-col items-center justify-center p-4 text-center">
           <div className="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
-            <span className="text-4xl">️</span>
+            <span className="text-4xl text-red-500 font-bold">!</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-slate-50 mb-4">
             Something went wrong
           </h1>
           <p className="text-slate-400 max-w-md mb-8">
-            We&apos;re sorry, but TomeSphere encountered an unexpected error.
+            We&apos;re sorry, but BookGarden encountered an unexpected error.
             Please try refreshing the page.
           </p>
           <div className="flex gap-4">

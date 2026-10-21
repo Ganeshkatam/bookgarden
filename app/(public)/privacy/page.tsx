@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
-  description: "Learn how TomeSphere handles your personal data, privacy, and encryption standards.",
+  description: "Learn how BookGarden handles your personal data, privacy, and encryption standards.",
 };
 
 export default function PrivacyPage() {
@@ -18,7 +18,7 @@ export default function PrivacyPage() {
           </p>
           <div className="prose prose-lg max-w-none text-[var(--text-secondary)] space-y-6">
             <p>
-              Your privacy is important to us. It is TomeSphere&apos;s policy to
+              Your privacy is important to us. It is BookGarden&apos;s policy to
               respect your privacy regarding any information we may collect from
               you across our website and application.
             </p>

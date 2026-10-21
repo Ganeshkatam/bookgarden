@@ -172,7 +172,7 @@ export function AnnouncementNotice({ announcements }: AnnouncementNoticeProps) {
       case "Greetings":
         return {
           icon: <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-300" />,
-          kicker: "New at TomeSphere",
+          kicker: "New at BookGarden",
           kickerColor: "text-indigo-700 dark:text-indigo-400",
           topLine: "bg-gradient-to-r from-indigo-500 via-purple-400 to-indigo-500",
           borderAccent: "border-indigo-200 hover:border-indigo-400 dark:border-indigo-500/35 dark:hover:border-indigo-500/65",

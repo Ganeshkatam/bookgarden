@@ -32,9 +32,9 @@ describe("Privacy Storage Guard", () => {
     });
 
     it("strictly blocks safeStorage.setItem for analytics data before consent is granted", () => {
-      const written = safeStorage.setItem("tomesphere_reader_dwell", "120", "analytics");
+      const written = safeStorage.setItem("bookgarden_reader_dwell", "120", "analytics");
       expect(written).toBe(false);
-      expect(window.localStorage.getItem("tomesphere_reader_dwell")).toBeNull();
+      expect(window.localStorage.getItem("bookgarden_reader_dwell")).toBeNull();
     });
   });
 
@@ -53,19 +53,19 @@ describe("Privacy Storage Guard", () => {
     });
 
     it("refuses to store functional data in localStorage", () => {
-      const written = safeStorage.setItem("tomesphere_recent_searches", '["gatsby"]', "functional");
+      const written = safeStorage.setItem("bookgarden_recent_searches", '["gatsby"]', "functional");
       expect(written).toBe(false);
-      expect(window.localStorage.getItem("tomesphere_recent_searches")).toBeNull();
+      expect(window.localStorage.getItem("bookgarden_recent_searches")).toBeNull();
     });
 
     it("purges any pre-existing non-essential data on save", () => {
       window.localStorage.setItem("theme", "light");
-      window.localStorage.setItem("tomesphere_recent_searches", '["history"]');
+      window.localStorage.setItem("bookgarden_recent_searches", '["history"]');
 
       saveCookieConsent({ essential: true, functional: false, analytics: false });
 
       expect(window.localStorage.getItem("theme")).toBeNull();
-      expect(window.localStorage.getItem("tomesphere_recent_searches")).toBeNull();
+      expect(window.localStorage.getItem("bookgarden_recent_searches")).toBeNull();
       // Consent key itself remains preserved
       expect(window.localStorage.getItem(COOKIE_CONSENT_STORAGE_KEY)).not.toBeNull();
     });
@@ -83,9 +83,9 @@ describe("Privacy Storage Guard", () => {
     });
 
     it("allows analytics data storage when granted", () => {
-      const written = safeStorage.setItem("tomesphere_reader_dwell", "45", "analytics");
+      const written = safeStorage.setItem("bookgarden_reader_dwell", "45", "analytics");
       expect(written).toBe(true);
-      expect(safeStorage.getItem("tomesphere_reader_dwell")).toBe("45");
+      expect(safeStorage.getItem("bookgarden_reader_dwell")).toBe("45");
     });
 
     it("removes items via safeStorage.removeItem", () => {
@@ -98,14 +98,14 @@ describe("Privacy Storage Guard", () => {
   describe("Storage Purge", () => {
     it("deletes all registered non-essential keys during purgeNonEssentialStorage", () => {
       window.localStorage.setItem("theme", "dark");
-      window.localStorage.setItem("tomesphere_reading_pos_book1", '{"page": 10}');
-      window.localStorage.setItem("tomesphere_announcement_seen_ann1", "true");
+      window.localStorage.setItem("bookgarden_reading_pos_book1", '{"page": 10}');
+      window.localStorage.setItem("bookgarden_announcement_seen_ann1", "true");
 
       purgeNonEssentialStorage();
 
       expect(window.localStorage.getItem("theme")).toBeNull();
-      expect(window.localStorage.getItem("tomesphere_reading_pos_book1")).toBeNull();
-      expect(window.localStorage.getItem("tomesphere_announcement_seen_ann1")).toBeNull();
+      expect(window.localStorage.getItem("bookgarden_reading_pos_book1")).toBeNull();
+      expect(window.localStorage.getItem("bookgarden_announcement_seen_ann1")).toBeNull();
     });
   });
 });

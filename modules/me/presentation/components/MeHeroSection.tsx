@@ -176,7 +176,7 @@ export default function MeHeroSection({ promise }: MeHeroSectionProps) {
                   <div className="flex-1 min-w-0 pb-1">
                     <h2 className="text-3xl font-display font-black text-white mb-1 line-clamp-2 drop-shadow-xl leading-tight uppercase tracking-tight">{book.title}</h2>
                     <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider truncate drop-shadow-md">
-                      <span className="truncate">{book.authors?.map((a: any) => (typeof a === "string" ? a : a?.name)).filter(Boolean).join(", ") || "TomeSphere"}</span>
+                      <span className="truncate">{book.authors?.map((a: any) => (typeof a === "string" ? a : a?.name)).filter(Boolean).join(", ") || "BookGarden"}</span>
                       {book.genres && book.genres.length > 0 && (
                         <>
                           <span className="text-slate-500">•</span>
@@ -239,7 +239,7 @@ export default function MeHeroSection({ promise }: MeHeroSectionProps) {
               </h2>
 
               <p className="text-base text-indigo-300 font-medium mb-3">
-                by {spotlightBook.authors?.map((a: any) => (typeof a === "string" ? a : a?.name)).filter(Boolean).join(", ") || "TomeSphere Library"}
+                by {spotlightBook.authors?.map((a: any) => (typeof a === "string" ? a : a?.name)).filter(Boolean).join(", ") || "BookGarden Library"}
               </p>
 
               {spotlightBook.genres && spotlightBook.genres.length > 0 && (

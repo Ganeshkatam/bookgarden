@@ -4,7 +4,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Security, Privacy & Data Protection",
-  description: "Learn how TomeSphere protects your data, ensures privacy, and maintains robust security infrastructure.",
+  description: "Learn how BookGarden protects your data, ensures privacy, and maintains robust security infrastructure.",
 };
 
 const SECURITY_FEATURES = [
@@ -59,7 +59,7 @@ export default function SecurityPage() {
               Security is our <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-500">Foundation</span>.
             </h1>
             <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 leading-relaxed">
-              When you use TomeSphere to learn, read, and remember, you are trusting us with your intellectual property. We do not take that responsibility lightly.
+              When you use BookGarden to learn, read, and remember, you are trusting us with your intellectual property. We do not take that responsibility lightly.
             </p>
           </div>
         </div>

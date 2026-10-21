@@ -33,49 +33,50 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://tomesphere.in"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://bookgarden.tomesphere.in"),
   title: {
-    default: "TomeSphere - Digital Book Discovery & Reader",
-    template: "%s | TomeSphere",
+    default: "BookGarden - Digital Book Discovery & Reader",
+    template: "%s | BookGarden",
   },
   description:
-    "Discover, explore, and read digital books with TomeSphere. A comprehensive platform with curated recommendations, archival collections, and personalized reading streaks.",
+    "Discover, explore, and read digital books with BookGarden. A comprehensive platform with curated recommendations, archival collections, and personalized reading streaks.",
   keywords: [
     "books",
     "digital books",
     "book discovery",
     "online reading",
-    "TomeSphere",
+    "BookGarden",
     "annotations",
     "ebooks",
     "curated collections",
   ],
-  authors: [{ name: "TomeSphere Editorial Team" }],
-  creator: "TomeSphere",
-  publisher: "TomeSphere",
+  authors: [{ name: "BookGarden Editorial Team" }],
+  creator: "BookGarden",
+  publisher: "BookGarden",
   icons: {
     icon: [
-      { url: "/logo.png?v=3", type: "image/png" },
-      { url: "/icon.png?v=3", type: "image/png" },
-      { url: "/favicon.ico?v=3" },
+      { url: "/logo.svg", type: "image/svg+xml" },
+      { url: "/logo.png?v=5", type: "image/png" },
+      { url: "/icon.png?v=5", type: "image/png" },
+      { url: "/favicon.ico?v=5" },
     ],
-    shortcut: "/logo.png?v=3",
-    apple: "/logo.png?v=3",
+    shortcut: "/logo.png?v=5",
+    apple: "/logo.png?v=5",
   },
   openGraph: {
     type: "website",
-    siteName: "TomeSphere",
+    siteName: "BookGarden",
     locale: "en_US",
-    title: "TomeSphere - Digital Book Discovery & Reader",
+    title: "BookGarden - Digital Book Discovery & Reader",
     description:
-      "Discover, explore, and read digital books with TomeSphere. Curated collections, personalized lists, and rich annotations.",
-    url: "https://tomesphere.in",
+      "Discover, explore, and read digital books with BookGarden. Curated collections, personalized lists, and rich annotations.",
+    url: "https://bookgarden.tomesphere.in",
   },
   twitter: {
     card: "summary_large_image",
-    title: "TomeSphere - Digital Book Discovery & Reader",
+    title: "BookGarden - Digital Book Discovery & Reader",
     description:
-      "Discover, explore, and read digital books with TomeSphere.",
+      "Discover, explore, and read digital books with BookGarden.",
   },
   robots: {
     index: true,
@@ -110,9 +111,10 @@ export default async function RootLayout({
       className={`${atkinson.variable} ${sourceSerif.variable} ${jetbrainsMono.variable}`}
     >
       <head>
-        <link rel="icon" href="/logo.png?v=3" type="image/png" sizes="any" />
-        <link rel="shortcut icon" href="/logo.png?v=3" type="image/png" />
-        <link rel="apple-touch-icon" href="/logo.png?v=3" />
+        <link rel="icon" href="/logo.svg" type="image/svg+xml" />
+        <link rel="icon" href="/logo.png?v=5" type="image/png" sizes="any" />
+        <link rel="shortcut icon" href="/logo.png?v=5" type="image/png" />
+        <link rel="apple-touch-icon" href="/logo.png?v=5" />
         <script
           id="theme-init-script"
           dangerouslySetInnerHTML={{

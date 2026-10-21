@@ -1,6 +1,6 @@
 # Naming Conventions
 
-Maintain strict naming consistency across TomeSphere styles, design tokens, primitives, layouts, and domain components.
+Maintain strict naming consistency across BookGarden styles, design tokens, primitives, layouts, and domain components.
 
 ---
 

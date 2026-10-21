@@ -161,7 +161,7 @@ export default function CookieConsentBanner() {
                 Cookie & Storage Preferences
               </DialogTitle>
               <DialogDescription className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-sans">
-                Customize how TomeSphere manages cookies and local browser storage. You can adjust these settings at any time.
+                Customize how BookGarden manages cookies and local browser storage. You can adjust these settings at any time.
               </DialogDescription>
             </DialogHeader>
 

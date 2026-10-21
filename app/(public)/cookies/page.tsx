@@ -4,8 +4,8 @@ import { ShieldCheck, Cookie, Lock, Sliders, CheckCircle2, Sparkles, ArrowRight 
 import ManageCookiesButton from "@/components/cookies/ManageCookiesButton";
 
 export const metadata: Metadata = {
-  title: "Strict Cookie Policy | TomeSphere",
-  description: "Comprehensive transparency on how TomeSphere implements strict, privacy-first cookie and storage policies with zero advertising trackers.",
+  title: "Strict Cookie Policy | BookGarden",
+  description: "Comprehensive transparency on how BookGarden implements strict, privacy-first cookie and storage policies with zero advertising trackers.",
 };
 
 export default function CookiesPage() {
@@ -29,7 +29,7 @@ export default function CookiesPage() {
               Strict Cookie & Local Storage Policy
             </h1>
             <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl">
-              TomeSphere operates on an absolute transparency model. We implement strict, encrypted cookie controls, zero third-party tracking scripts, and give you complete sovereignty over your functional and telemetry preferences.
+              BookGarden operates on an absolute transparency model. We implement strict, encrypted cookie controls, zero third-party tracking scripts, and give you complete sovereignty over your functional and telemetry preferences.
             </p>
           </div>
 
@@ -91,7 +91,7 @@ export default function CookiesPage() {
               Complete Cookie & Storage Inventory
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              The following table details every cookie and local storage item utilized within TomeSphere.
+              The following table details every cookie and local storage item utilized within BookGarden.
             </p>
           </div>
 
@@ -129,8 +129,8 @@ export default function CookiesPage() {
                     <td className="p-3">Authenticates user identity and secures backend session requests.</td>
                   </tr>
                   <tr>
-                    <td className="p-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">tomesphere_cookie_consent</td>
-                    <td className="p-3">TomeSphere</td>
+                    <td className="p-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">bookgarden_cookie_consent</td>
+                    <td className="p-3">BookGarden</td>
                     <td className="p-3 font-mono text-[11px]">LocalStorage</td>
                     <td className="p-3">Persistent</td>
                     <td className="p-3">Records your cookie and privacy consent preferences.</td>
@@ -167,15 +167,15 @@ export default function CookiesPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-600 dark:text-slate-300">
                   <tr>
-                    <td className="p-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">tomesphere-theme</td>
-                    <td className="p-3">TomeSphere</td>
+                    <td className="p-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">bookgarden-theme</td>
+                    <td className="p-3">BookGarden</td>
                     <td className="p-3 font-mono text-[11px]">LocalStorage</td>
                     <td className="p-3">Persistent</td>
                     <td className="p-3">Preserves your interface theme (Light, Dark, System) preventing flash of unstyled content.</td>
                   </tr>
                   <tr>
-                    <td className="p-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">tomesphere_reading_pos_*</td>
-                    <td className="p-3">TomeSphere</td>
+                    <td className="p-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">bookgarden_reading_pos_*</td>
+                    <td className="p-3">BookGarden</td>
                     <td className="p-3 font-mono text-[11px]">LocalStorage</td>
                     <td className="p-3">Persistent</td>
                     <td className="p-3">Provides instant local reading position recovery when offline or reconnecting.</td>
@@ -212,8 +212,8 @@ export default function CookiesPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-600 dark:text-slate-300">
                   <tr>
-                    <td className="p-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">tomesphere_reader_dwell</td>
-                    <td className="p-3">TomeSphere</td>
+                    <td className="p-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">bookgarden_reader_dwell</td>
+                    <td className="p-3">BookGarden</td>
                     <td className="p-3 font-mono text-[11px]">SessionMemory</td>
                     <td className="p-3">Session Only</td>
                     <td className="p-3">Measures active page dwell time for reading statistics without third-party tracking.</td>
@@ -237,7 +237,7 @@ export default function CookiesPage() {
               <ManageCookiesButton />
             </div>
             <p className="pt-2 text-xs text-slate-500 dark:text-slate-400">
-              Additionally, you can configure your browser to block all cookies or notify you when a cookie is set. Please note that blocking Strictly Necessary cookies will prevent logging in and reading books securely on TomeSphere.
+              Additionally, you can configure your browser to block all cookies or notify you when a cookie is set. Please note that blocking Strictly Necessary cookies will prevent logging in and reading books securely on BookGarden.
             </p>
           </div>
         </div>

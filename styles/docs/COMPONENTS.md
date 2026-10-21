@@ -1,6 +1,6 @@
 # Component Architecture Guidelines
 
-TomeSphere separates components into two categories: **UI Primitives** (shared UI library) and **Domain Components** (feature-specific UI).
+BookGarden separates components into two categories: **UI Primitives** (shared UI library) and **Domain Components** (feature-specific UI).
 
 ```
    UI Primitives (Button, Card, Input)

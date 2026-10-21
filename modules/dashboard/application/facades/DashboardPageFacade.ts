@@ -17,8 +17,8 @@ export class DashboardPageFacade {
     const data = await handler.execute(user.id);
 
     // Enrich with auth identity details if missing
-    if (!data.user.name || data.user.name === "TomeSphere Scholar") {
-      data.user.name = user.name || user.email?.split("@")[0] || "TomeSphere Scholar";
+    if (!data.user.name || data.user.name === "BookGarden Scholar") {
+      data.user.name = user.name || user.email?.split("@")[0] || "BookGarden Scholar";
     }
     data.user.email = user.email || data.user.email;
     data.user.avatarUrl = data.user.avatarUrl || null;

@@ -81,7 +81,7 @@ html:not(.dark) {
     rgba(243, 232, 255, 0.3) 100%
   );
 
-  /* shadcn semantic aliases mapped onto TomeSphere design tokens */
+  /* shadcn semantic aliases mapped onto BookGarden design tokens */
   --background: var(--surface-canvas);
   --foreground: var(--text-primary);
   --card: var(--surface-default);
