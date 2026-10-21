@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Recently Cataloged Editions & New Ingestions",
-  description: "Browse freshly preserved and cataloged books newly added to the TomeSphere digital archive.",
+  description: "Browse freshly preserved and cataloged books newly added to the BookGarden digital archive.",
 };
 
 export default async function NewArrivalsPage() {

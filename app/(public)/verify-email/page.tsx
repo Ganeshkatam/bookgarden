@@ -27,7 +27,10 @@ export function VerifyEmailContent() {
   const checkUser = useCallback(async () => {
     try {
       // 1. Try to recover from short-lived client state (Magic Link flow)
-      const pendingEmail = typeof window !== "undefined" ? sessionStorage.getItem("tomesphere_pending_email") : null;
+      const pendingEmail =
+        typeof window !== "undefined"
+          ? sessionStorage.getItem("bookgarden_pending_email")
+          : null;
       if (pendingEmail) {
         setEmail(pendingEmail);
         setIsMagicLink(true);

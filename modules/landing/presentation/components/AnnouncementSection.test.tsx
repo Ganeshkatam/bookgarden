@@ -8,7 +8,7 @@ describe("AnnouncementSection behavioral tests", () => {
   const mockAnnouncements: AnnouncementDto[] = [
     {
       id: "ann-1",
-      title: "Welcome to TomeSphere 1.0",
+      title: "Welcome to BookGarden 1.0",
       content: "Explore classic literature with deep reading tools.",
       type: "feature",
       linkUrl: "/me/library",
@@ -51,7 +51,7 @@ describe("AnnouncementSection behavioral tests", () => {
     render(<AnnouncementSection announcements={mockAnnouncements} />);
 
     expect(screen.getByRole("heading", { name: "Announcements" })).toBeInTheDocument();
-    expect(screen.getByText("Welcome to TomeSphere 1.0")).toBeInTheDocument();
+    expect(screen.getByText("Welcome to BookGarden 1.0")).toBeInTheDocument();
     expect(screen.getByText("New Shelf Sharing Features")).toBeInTheDocument();
     expect(screen.queryByText("Excess Announcement")).not.toBeInTheDocument();
 

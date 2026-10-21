@@ -17,7 +17,7 @@ describe("SubmitReportCommand", () => {
       type: "BUG",
       title: "Broken pagination in discovery",
       description: "Clicking next page results in empty state instead of page 2.",
-      email: "reader@tomesphere.in",
+      email: "reader@bookgarden.tomesphere.in",
       userId: "user-123",
     });
 
@@ -28,7 +28,7 @@ describe("SubmitReportCommand", () => {
         type: "BUG",
         title: "Broken pagination in discovery",
         description: "Clicking next page results in empty state instead of page 2.",
-        email: "reader@tomesphere.in",
+        email: "reader@bookgarden.tomesphere.in",
         userId: "user-123",
       }),
     );

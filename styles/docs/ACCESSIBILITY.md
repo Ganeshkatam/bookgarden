@@ -1,6 +1,6 @@
 # Accessibility (a11y) Standards
 
-TomeSphere treats accessibility as a core quality attribute. Shared UI primitives must build in accessibility behaviors out of the box.
+BookGarden treats accessibility as a core quality attribute. Shared UI primitives must build in accessibility behaviors out of the box.
 
 ## 1. Focus Indicators
 

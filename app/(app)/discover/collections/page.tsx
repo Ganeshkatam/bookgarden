@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Curated Archival Collections & Anthologies",
-  description: "Explore thematic anthologies, historical series, and curated reading tracks on TomeSphere.",
+  description: "Explore thematic anthologies, historical series, and curated reading tracks on BookGarden.",
 };
 
 export default async function CollectionsPage() {

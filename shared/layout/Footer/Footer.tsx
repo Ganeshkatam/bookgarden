@@ -70,14 +70,14 @@ export default function Footer() {
               <div className="relative w-9 h-9 rounded-xl overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md shadow-indigo-500/10 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                 <Image
                   src="/logo.png"
-                  alt="TomeSphere Logo"
+                  alt="BookGarden Logo"
                   width={36}
                   height={36}
                   className="object-contain p-0.5"
                 />
               </div>
               <span className="text-xl font-display font-extrabold text-[var(--text-primary)] tracking-tight">
-                TomeSphere
+                BookGarden
               </span>
             </Link>
 
@@ -166,7 +166,7 @@ export default function Footer() {
 
         {/* ── Bottom Bar ── */}
         <div className="py-6 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[var(--text-tertiary)]">
-          <span>&copy; {currentYear} TomeSphere. All rights reserved.</span>
+          <span>&copy; {currentYear} BookGarden. All rights reserved.</span>
           <div className="flex items-center gap-6">
             <Link
               href="/privacy"

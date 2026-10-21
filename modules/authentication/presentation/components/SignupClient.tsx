@@ -144,7 +144,7 @@ export default function SignupClient() {
             <div className="relative w-11 h-11 rounded-xl overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md shadow-indigo-500/10 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
               <Image
                 src="/logo.png"
-                alt="TomeSphere Logo"
+                alt="BookGarden Logo"
                 width={44}
                 height={44}
                 className="object-contain p-0.5"
@@ -153,7 +153,7 @@ export default function SignupClient() {
             </div>
             <div>
               <span className="text-xl font-display font-bold text-slate-900 dark:text-white">
-                TomeSphere
+                BookGarden
               </span>
               <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] mt-0.5">
                 READ • LEARN • REMEMBER

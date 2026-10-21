@@ -16,7 +16,7 @@ const MAX_RETRIES = Number.isInteger(parsedMax) && parsedMax > 0 ? parsedMax : 3
  * marks them as completed via internal scoped capabilities.
  *
  * Design decisions:
- * - Uses `WorkerDatabaseClient` via direct PostgreSQL connection using `tomesphere_worker` role.
+ * - Uses `WorkerDatabaseClient` via direct PostgreSQL connection using `bookgarden_worker` role.
  * - Invokes `internal.claim_outbox_events` RPC for safe concurrent claiming with lease fencing (FOR UPDATE SKIP LOCKED).
  * - Invokes `internal.complete_outbox_event` RPC for state transitions with lease validation.
  * - Awaits handler completion via `eventBus.dispatch` to prevent premature event completion.

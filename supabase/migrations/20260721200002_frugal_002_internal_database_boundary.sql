@@ -1,5 +1,5 @@
 -- Frugal Migration 002: Internal Database Boundary & Worker Role
--- Purpose: Establish unexposed 'internal' schema, dedicated 'tomesphere_worker' role, and capability functions.
+-- Purpose: Establish unexposed 'internal' schema, dedicated 'bookgarden_worker' role, and capability functions.
 
 -- 1. Create unexposed internal schema
 CREATE SCHEMA IF NOT EXISTS internal;
@@ -7,14 +7,14 @@ CREATE SCHEMA IF NOT EXISTS internal;
 -- 2. Create worker role (without plain literal passwords in migration SQL)
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'tomesphere_worker') THEN
-    CREATE ROLE tomesphere_worker WITH LOGIN;
+  IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'bookgarden_worker') THEN
+    CREATE ROLE bookgarden_worker WITH LOGIN;
   END IF;
 END
 $$;
 
 -- Grant schema usage
-GRANT USAGE ON SCHEMA internal TO tomesphere_worker;
+GRANT USAGE ON SCHEMA internal TO bookgarden_worker;
 
 -- 3. Capability Functions in internal schema (SECURITY DEFINER with empty search_path)
 
@@ -204,10 +204,10 @@ BEGIN
 END;
 $$;
 
--- 4. Grant capability execution privileges to tomesphere_worker role
-GRANT EXECUTE ON FUNCTION internal.claim_outbox_events(integer) TO tomesphere_worker;
-GRANT EXECUTE ON FUNCTION internal.cleanup_expired_rate_limits() TO tomesphere_worker;
-GRANT EXECUTE ON FUNCTION internal.refresh_category_document(text) TO tomesphere_worker;
-GRANT EXECUTE ON FUNCTION internal.refresh_recommendation_signals(uuid) TO tomesphere_worker;
-GRANT EXECUTE ON FUNCTION internal.refresh_search_document(uuid) TO tomesphere_worker;
-GRANT EXECUTE ON FUNCTION internal.sanitize_account_logs(uuid) TO tomesphere_worker;
+-- 4. Grant capability execution privileges to bookgarden_worker role
+GRANT EXECUTE ON FUNCTION internal.claim_outbox_events(integer) TO bookgarden_worker;
+GRANT EXECUTE ON FUNCTION internal.cleanup_expired_rate_limits() TO bookgarden_worker;
+GRANT EXECUTE ON FUNCTION internal.refresh_category_document(text) TO bookgarden_worker;
+GRANT EXECUTE ON FUNCTION internal.refresh_recommendation_signals(uuid) TO bookgarden_worker;
+GRANT EXECUTE ON FUNCTION internal.refresh_search_document(uuid) TO bookgarden_worker;
+GRANT EXECUTE ON FUNCTION internal.sanitize_account_logs(uuid) TO bookgarden_worker;

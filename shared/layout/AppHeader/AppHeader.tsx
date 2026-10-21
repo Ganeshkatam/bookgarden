@@ -76,7 +76,7 @@ export function AppHeader({ className = "", variant = "application", user }: App
               <div className="relative w-10 h-10 lg:w-11 lg:h-11 rounded-xl overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md shadow-indigo-500/10 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                 <Image
                   src="/logo.png"
-                  alt="TomeSphere Logo"
+                  alt="BookGarden Logo"
                   width={44}
                   height={44}
                   className="object-contain p-0.5"
@@ -87,7 +87,7 @@ export function AppHeader({ className = "", variant = "application", user }: App
                 className={`tracking-tight font-display font-extrabold text-lg sm:text-xl lg:text-2xl shrink-0 ${isDark ? "text-white" : "text-slate-900"
                   }`}
               >
-                TomeSphere
+                BookGarden
               </span>
             </Link>
 

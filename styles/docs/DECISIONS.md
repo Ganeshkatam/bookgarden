@@ -1,6 +1,6 @@
 # Architectural Decisions Records (ADR)
 
-This document registers the core engineering decisions made during TomeSphere's frontend architecture refactoring.
+This document registers the core engineering decisions made during BookGarden's frontend architecture refactoring.
 
 ## 1. CSS Modules over Global Styles for Features
 

@@ -8,7 +8,7 @@ import { safeStorage } from "@/shared/core/storage/privacy-storage";
 
 const TOUR_STEPS = [
   {
-    title: "Welcome to TomeSphere ",
+    title: "Welcome to BookGarden",
     description:
       "Your ultimate platform for books, reading, and academic resources. Let's take a quick tour!",
     icon: <BookOpen size={48} className="text-indigo-400" />,
@@ -24,7 +24,7 @@ const TOUR_STEPS = [
 ];
 
 const TOUR_COMPLETED_KEY =
-  process.env.NEXT_PUBLIC_TOUR_COMPLETED_KEY || "tomesphere_tour_completed";
+  process.env.NEXT_PUBLIC_TOUR_COMPLETED_KEY || "bookgarden_tour_completed";
 
 export default function OnboardingTour() {
   const [isVisible, setIsVisible] = useState(false);

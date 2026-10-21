@@ -7,7 +7,7 @@ describe("PlatformReport Entity", () => {
       type: "BUG",
       title: "Broken audio player",
       description: "Audio player stutters after chapter 3",
-      email: "user@tomesphere.in",
+      email: "user@bookgarden.tomesphere.in",
       userId: "user-456",
     });
 
@@ -16,7 +16,7 @@ describe("PlatformReport Entity", () => {
     expect(report.title).toBe("Broken audio player");
     expect(report.description).toBe("Audio player stutters after chapter 3");
     expect(report.status).toBe("PENDING");
-    expect(report.email).toBe("user@tomesphere.in");
+    expect(report.email).toBe("user@bookgarden.tomesphere.in");
     expect(report.userId).toBe("user-456");
     expect(report.createdAt).toBeInstanceOf(Date);
     expect(report.updatedAt).toBeInstanceOf(Date);

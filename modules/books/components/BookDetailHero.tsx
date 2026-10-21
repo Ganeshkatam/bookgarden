@@ -84,11 +84,11 @@ export function BookDetailHero({
 
   const authorNames = useMemo(() => {
     if (!book.authors || book.authors.length === 0)
-      return "TomeSphere Archive";
+      return "BookGarden Archive";
     const names = book.authors
       .map((a: any) => (typeof a === "string" ? a : a?.name))
       .filter(Boolean);
-    return names.length > 0 ? names.join(", ") : "TomeSphere Archive";
+    return names.length > 0 ? names.join(", ") : "BookGarden Archive";
   }, [book.authors]);
 
   const year = book.publishedDate
@@ -168,7 +168,7 @@ export function BookDetailHero({
       try {
         await navigator.share({
           title: book.title,
-          text: `Read "${book.title}" on TomeSphere Digital Archive`,
+          text: `Read "${book.title}" on BookGarden Digital Archive`,
           url: window.location.href,
         });
         return;
@@ -250,7 +250,7 @@ export function BookDetailHero({
               </div>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              Scholarly digitized edition preserved in TomeSphere Digital Archive
+              Scholarly digitized edition preserved in BookGarden Digital Archive
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -657,7 +657,7 @@ export function BookDetailHero({
                     </h3>
                   </div>
                   <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-serif">
-                    This scholarly edition is preserved within the TomeSphere Digital Archive, optimized for in-browser vector reading, cross-device synchronization, and offline study.
+                    This scholarly edition is preserved within the BookGarden Digital Archive, optimized for in-browser vector reading, cross-device synchronization, and offline study.
                   </p>
                 </div>
               )}
@@ -805,7 +805,7 @@ export function BookDetailHero({
                   <span>Publisher</span>
                 </span>
                 <p className="font-bold text-sm text-slate-900 dark:text-white">
-                  {book.publisher || "TomeSphere Archival Editions"}
+                  {book.publisher || "BookGarden Archival Editions"}
                 </p>
               </div>
 

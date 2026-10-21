@@ -366,7 +366,7 @@ export class GetDashboardAnalyticsHandler {
       {
         id: "m-first-page",
         title: "First Edition Explorer",
-        description: "Add your first volume or start reading in TomeSphere",
+        description: "Add your first volume or start reading in BookGarden",
         icon: "BookOpen",
         category: "archive",
         unlocked: booksStarted > 0,
@@ -406,7 +406,7 @@ export class GetDashboardAnalyticsHandler {
       {
         id: "m-completed-first",
         title: "Archival Graduate",
-        description: "Complete your first full volume in TomeSphere",
+        description: "Complete your first full volume in BookGarden",
         icon: "Award",
         category: "archive",
         unlocked: booksCompleted >= 1,
@@ -421,7 +421,7 @@ export class GetDashboardAnalyticsHandler {
       return {
         id: s.id,
         bookId: s.book_id,
-        bookTitle: b.title || "TomeSphere Volume",
+        bookTitle: b.title || "BookGarden Volume",
         durationMinutes: s.reading_time_minutes || 0,
         pagesRead: s.current_page || 0,
         endPage: s.current_page || 0,
@@ -435,7 +435,7 @@ export class GetDashboardAnalyticsHandler {
         return {
           id: lb.id,
           bookId: lb.book_id,
-          bookTitle: b.title || "TomeSphere Volume",
+          bookTitle: b.title || "BookGarden Volume",
           durationMinutes: 0,
           pagesRead: 0,
           endPage: 0,
@@ -495,8 +495,8 @@ export class GetDashboardAnalyticsHandler {
 
     return {
       user: {
-        name: profile?.display_name || "TomeSphere Scholar",
-        email: "reader@tomesphere.in",
+        name: profile?.display_name || "BookGarden Scholar",
+        email: "reader@bookgarden.tomesphere.in",
         avatarUrl: profile?.avatar_url || null,
       },
       metrics: {

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Contact & Editorial Inquiries",
-  description: "Get in touch with the TomeSphere editorial, technical support, and partnership teams.",
+  description: "Get in touch with the BookGarden editorial, technical support, and partnership teams.",
 };
 
 export default function ContactPage() {
@@ -21,13 +21,13 @@ export default function ContactPage() {
             </p>
             <ul className="mt-6 space-y-3 pl-4">
               <li>
-                <strong className="text-[var(--text-primary)]">General Support:</strong> support@tomesphere.in
+                <strong className="text-[var(--text-primary)]">General Support:</strong> support@bookgarden.tomesphere.in
               </li>
               <li>
-                <strong className="text-[var(--text-primary)]">Partnerships:</strong> partners@tomesphere.in
+                <strong className="text-[var(--text-primary)]">Partnerships:</strong> partners@bookgarden.tomesphere.in
               </li>
               <li>
-                <strong className="text-[var(--text-primary)]">Feedback:</strong> feedback@tomesphere.in
+                <strong className="text-[var(--text-primary)]">Feedback:</strong> feedback@bookgarden.tomesphere.in
               </li>
             </ul>
           </div>

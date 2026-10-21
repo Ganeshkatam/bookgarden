@@ -48,7 +48,7 @@ export function FeaturedBooks({ items }: FeaturedBooksProps) {
   const primaryAuthors =
     primary?.authors && primary.authors.length > 0
       ? primary.authors.map((a) => a.name).join(", ")
-      : "TomeSphere Library";
+      : "BookGarden Library";
 
   const primaryLanguage = (primary?.language || "English").toUpperCase();
   const primaryYear = primary?.publicationYear || null;
@@ -313,7 +313,7 @@ export function FeaturedBooks({ items }: FeaturedBooksProps) {
                 const author =
                   book.authors && book.authors.length > 0
                     ? book.authors.map((a) => a.name).join(", ")
-                    : "TomeSphere Library";
+                    : "BookGarden Library";
 
                 const year = book.publicationYear || null;
 

@@ -17,14 +17,14 @@ export async function generateMetadata({
   if (!book) {
     return {
       title: "Book Not Found",
-      description: "The requested book could not be found in the TomeSphere archive.",
+      description: "The requested book could not be found in the BookGarden archive.",
     };
   }
 
   const authors = (book.authors || []).map((author) => author.name).join(", ");
   const description =
     book.description?.trim() ||
-    `Read ${book.title}${authors ? ` by ${authors}` : ""} on TomeSphere. Explore digital editions, annotations, and curated collections.`;
+    `Read ${book.title}${authors ? ` by ${authors}` : ""} on BookGarden. Explore digital editions, annotations, and curated collections.`;
   const canonical = `/book/${book.id}`;
 
   return {

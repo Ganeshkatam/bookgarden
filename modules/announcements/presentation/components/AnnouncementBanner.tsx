@@ -10,11 +10,11 @@ import AnnouncementCenter from "./AnnouncementCenter";
 import { safeStorage } from "@/shared/core/storage/privacy-storage";
 
 function isTopBannerDismissed(id: string): boolean {
-  return safeStorage.getItem(`tomesphere_top_banner_dismissed_${id}`) === "true";
+  return safeStorage.getItem(`bookgarden_top_banner_dismissed_${id}`) === "true";
 }
 
 function markTopBannerDismissed(id: string): void {
-  safeStorage.setItem(`tomesphere_top_banner_dismissed_${id}`, "true", "functional");
+  safeStorage.setItem(`bookgarden_top_banner_dismissed_${id}`, "true", "functional");
 }
 
 function isMaintenanceAnnouncement(type: string): boolean {

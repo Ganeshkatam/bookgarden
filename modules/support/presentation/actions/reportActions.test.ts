@@ -43,7 +43,7 @@ describe("submitReportAction Server Action", () => {
     formData.append("type", "BUG");
     formData.append("title", "Broken reader theme toggle");
     formData.append("description", "Theme reverts back to dark when navigating chapters.");
-    formData.append("email", "reader@tomesphere.in");
+    formData.append("email", "reader@bookgarden.tomesphere.in");
 
     const result = await submitReportAction(formData);
 
@@ -58,7 +58,7 @@ describe("submitReportAction Server Action", () => {
         type: "BUG",
         title: "Broken reader theme toggle",
         user_id: "user-reporting-1",
-        email: "reader@tomesphere.in",
+        email: "reader@bookgarden.tomesphere.in",
       }),
     );
   });

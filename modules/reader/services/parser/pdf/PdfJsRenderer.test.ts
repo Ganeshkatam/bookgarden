@@ -115,7 +115,7 @@ describe("PdfJsRenderer continuous scrolling", () => {
     const renderer = new PdfJsRenderer();
     await renderer.initialize("book.pdf", container);
 
-    expect(container.querySelectorAll(".tomesphere-pdf-page")).toHaveLength(500);
+    expect(container.querySelectorAll(".bookgarden-pdf-page")).toHaveLength(500);
     expect(container.querySelectorAll("canvas")).toHaveLength(1);
     expect(pages[0].render).toHaveBeenCalledTimes(1);
     expect(pages[1].render).not.toHaveBeenCalled();

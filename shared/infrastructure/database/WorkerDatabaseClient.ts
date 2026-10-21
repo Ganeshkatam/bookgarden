@@ -4,8 +4,8 @@ import { Pool, QueryResultRow } from "pg";
  * WorkerDatabaseClient
  * 
  * Infrastructure client for trusted server-side background workers and cron jobs.
- * Connects directly to PostgreSQL via TOMESPHERE_WORKER_DATABASE_URL using the 
- * narrowly-privileged 'tomesphere_worker' role.
+ * Connects directly to PostgreSQL via BOOKGARDEN_WORKER_DATABASE_URL using the 
+ * narrowly-privileged 'bookgarden_worker' role.
  * 
  * Design & Security Principles:
  * - Does NOT use SUPABASE_SERVICE_ROLE_KEY or PostgREST Data API.
@@ -16,22 +16,22 @@ import { Pool, QueryResultRow } from "pg";
 
 declare global {
   // Prevent multiple pool instances during Next.js hot reloading in dev
-  var __tomesphereWorkerPool: Pool | undefined;
+  var __bookgardenWorkerPool: Pool | undefined;
 }
 
 function getWorkerPool(): Pool {
-  const connectionString = process.env.TOMESPHERE_WORKER_DATABASE_URL;
+  const connectionString = process.env.BOOKGARDEN_WORKER_DATABASE_URL;
 
   if (!connectionString) {
     throw new Error(
-      "[WorkerDatabaseClient] Missing TOMESPHERE_WORKER_DATABASE_URL environment variable."
+      "[WorkerDatabaseClient] Missing BOOKGARDEN_WORKER_DATABASE_URL environment variable."
     );
   }
 
-  if (!globalThis.__tomesphereWorkerPool) {
+  if (!globalThis.__bookgardenWorkerPool) {
     const isProduction = process.env.NODE_ENV === "production";
     
-    globalThis.__tomesphereWorkerPool = new Pool({
+    globalThis.__bookgardenWorkerPool = new Pool({
       connectionString,
       max: 3, // Bounded pool size for serverless execution
       idleTimeoutMillis: 30000,
@@ -42,7 +42,7 @@ function getWorkerPool(): Pool {
     });
   }
 
-  return globalThis.__tomesphereWorkerPool;
+  return globalThis.__bookgardenWorkerPool;
 }
 
 export interface ClaimedOutboxEvent {
@@ -72,7 +72,7 @@ export class WorkerDatabaseClient {
    */
   static async claimOutboxEvents(
     limitCount: number = 50,
-    workerIdentity: string = "tomesphere-relay",
+    workerIdentity: string = "bookgarden-relay",
     leaseDurationSeconds: number = 300,
   ): Promise<ClaimedOutboxEvent[]> {
     const query = `

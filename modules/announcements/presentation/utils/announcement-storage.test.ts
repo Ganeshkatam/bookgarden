@@ -92,7 +92,7 @@ describe("announcement-storage policy & persistence tests", () => {
     window.localStorage.clear();
     markAnnouncementSeen("unconsented-1");
     expect(isAnnouncementSeen("unconsented-1")).toBe(false);
-    expect(window.localStorage.getItem("tomesphere_announcement_seen_unconsented-1")).toBeNull();
+    expect(window.localStorage.getItem("bookgarden_announcement_seen_unconsented-1")).toBeNull();
   });
 
   it("calculates correct priorities according to policy matrix", () => {

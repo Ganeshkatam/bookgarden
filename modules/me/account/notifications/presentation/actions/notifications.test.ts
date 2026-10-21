@@ -14,7 +14,7 @@ jest.mock("next/cache", () => ({
 }));
 
 describe("Notification Preferences Server Actions", () => {
-  const mockUser = { id: "user-prefs-1", email: "reader@tomesphere.in" };
+  const mockUser = { id: "user-prefs-1", email: "reader@bookgarden.tomesphere.in" };
   let mockSupabase: any;
 
   beforeEach(() => {

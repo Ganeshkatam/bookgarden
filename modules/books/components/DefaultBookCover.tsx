@@ -17,12 +17,12 @@ export default function DefaultBookCover({
   className = "",
 }: DefaultBookCoverProps) {
   const authorName = useMemo(() => {
-    if (!authors) return "TomeSphere Library";
+    if (!authors) return "BookGarden Library";
     if (typeof authors === "string") return authors;
     if (Array.isArray(authors)) {
-      return authors.map((a: any) => (typeof a === "string" ? a : a?.name)).filter(Boolean).join(", ") || "TomeSphere Library";
+      return authors.map((a: any) => (typeof a === "string" ? a : a?.name)).filter(Boolean).join(", ") || "BookGarden Library";
     }
-    return "TomeSphere Library";
+    return "BookGarden Library";
   }, [authors]);
 
   const genreLabel = useMemo(() => {

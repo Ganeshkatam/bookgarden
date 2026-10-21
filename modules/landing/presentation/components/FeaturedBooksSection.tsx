@@ -12,7 +12,7 @@ export default function FeaturedBooksSection({
   return (
     <BookShelfRow
       title="Featured Books"
-      description="Handpicked discoveries from the TomeSphere collection."
+      description="Handpicked discoveries from the BookGarden collection."
       viewAllHref="/discover"
       viewAllTitle="All Featured Selections"
       countLabel="Featured Catalog"

@@ -17,7 +17,7 @@ export async function getDiscoveryConfiguration(
         mode: "authors",
         title: "Popular Authors",
         subtitle: "Prolific Minds & Canonical Voices",
-        description: "Explore prolific authors, historical scholars, and influential thinkers across the TomeSphere archive.",
+        description: "Explore prolific authors, historical scholars, and influential thinkers across the BookGarden archive.",
         totalCount: data.total,
         gridContent: <AuthorGrid items={data.items} />,
       };
@@ -39,7 +39,7 @@ export async function getDiscoveryConfiguration(
         mode: "featured",
         title: "Editor's Picks",
         subtitle: "Curated Masterpieces & Essential Reading",
-        description: "Hand-picked standout classics, foundational textbooks, and definitive digital editions curated by the TomeSphere editorial team.",
+        description: "Hand-picked standout classics, foundational textbooks, and definitive digital editions curated by the BookGarden editorial team.",
         totalCount: data.total,
         gridContent: <BookGrid items={data.items} />,
       };

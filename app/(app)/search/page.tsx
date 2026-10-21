@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Search Digital Archive",
   description:
-    "Explore digitized volumes, textbooks, and public domain editions across the TomeSphere archive.",
+    "Explore digitized volumes, textbooks, and public domain editions across the BookGarden archive.",
 };
 
 export default async function SearchPage({

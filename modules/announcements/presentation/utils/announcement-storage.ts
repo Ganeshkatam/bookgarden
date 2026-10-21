@@ -6,8 +6,8 @@ import { safeStorage } from "@/shared/core/storage/privacy-storage";
  * - ANNOUNCEMENT_SEEN_STORAGE_PREFIX: Tracks entry card acknowledgment/dismissal.
  * - ANNOUNCEMENT_BANNER_DISMISSED_PREFIX: Tracks passive top banner dismissal independently.
  */
-export const ANNOUNCEMENT_SEEN_STORAGE_PREFIX = "tomesphere_announcement_seen_";
-export const ANNOUNCEMENT_BANNER_DISMISSED_PREFIX = "tomesphere_announcement_banner_dismissed_";
+export const ANNOUNCEMENT_SEEN_STORAGE_PREFIX = "bookgarden_announcement_seen_";
+export const ANNOUNCEMENT_BANNER_DISMISSED_PREFIX = "bookgarden_announcement_banner_dismissed_";
 
 /**
  * Priority matrix for announcement entry presentation:
@@ -76,8 +76,7 @@ export function markAnnouncementSeen(id: string): void {
 export function isBannerDismissed(id: string): boolean {
   const bannerDismissed =
     safeStorage.getItem(`${ANNOUNCEMENT_BANNER_DISMISSED_PREFIX}${id}`) === "true";
-  const entrySeen =
-    safeStorage.getItem(`${ANNOUNCEMENT_SEEN_STORAGE_PREFIX}${id}`) === "true";
+  const entrySeen = isAnnouncementSeen(id);
   return bannerDismissed || entrySeen;
 }
 

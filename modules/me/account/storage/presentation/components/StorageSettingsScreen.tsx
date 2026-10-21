@@ -32,13 +32,13 @@ interface BrowserStorageStats {
   cachesCount: number;
 }
 
-// Explicit list of cache name prefixes owned exclusively by TomeSphere
-const TOMESPHERE_CACHE_PREFIXES = [
-  "tomesphere-reader",
-  "tomesphere-book",
-  "tomesphere-assets",
-  "tomesphere-offline",
-  "tomesphere-pwa",
+// Explicit list of cache name prefixes owned exclusively by BookGarden
+const BOOKGARDEN_CACHE_PREFIXES = [
+  "bookgarden-reader",
+  "bookgarden-book",
+  "bookgarden-assets",
+  "bookgarden-offline",
+  "bookgarden-pwa",
   "workbox-runtime",
   "workbox-precache",
 ];
@@ -69,10 +69,10 @@ export function StorageSettingsScreen({ serverStats }: StorageSettingsScreenProp
 
       if (typeof window !== "undefined" && "caches" in window) {
         const keys = await window.caches.keys();
-        const tomesphereCaches = keys.filter((key) =>
-          TOMESPHERE_CACHE_PREFIXES.some((prefix) => key.startsWith(prefix))
+        const bookgardenCaches = keys.filter((key) =>
+          BOOKGARDEN_CACHE_PREFIXES.some((prefix) => key.startsWith(prefix))
         );
-        cachesCount = tomesphereCaches.length;
+        cachesCount = bookgardenCaches.length;
       }
 
       setBrowserStats({
@@ -92,7 +92,7 @@ export function StorageSettingsScreen({ serverStats }: StorageSettingsScreenProp
     measureStorage();
   }, []);
 
-  // Clear ONLY TomeSphere-owned cache namespaces
+  // Clear ONLY BookGarden-owned cache namespaces
   const handleClearCache = async () => {
     setIsClearing(true);
     try {
@@ -104,7 +104,7 @@ export function StorageSettingsScreen({ serverStats }: StorageSettingsScreenProp
 
       const keys = await window.caches.keys();
       const targetKeys = keys.filter((key) =>
-        TOMESPHERE_CACHE_PREFIXES.some((prefix) => key.startsWith(prefix))
+        BOOKGARDEN_CACHE_PREFIXES.some((prefix) => key.startsWith(prefix))
       );
 
       if (targetKeys.length === 0) {
@@ -162,7 +162,7 @@ export function StorageSettingsScreen({ serverStats }: StorageSettingsScreenProp
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs">
             <span className="font-semibold text-slate-700 dark:text-slate-300">
-              Browser storage used by TomeSphere
+              Browser storage used by BookGarden
             </span>
             <span className="font-mono font-medium text-slate-500 dark:text-slate-400">
               {browserStats ? `${browserStats.usageMB} MB / ${browserStats.quotaMB} MB` : "Calculating..."}
@@ -187,7 +187,7 @@ export function StorageSettingsScreen({ serverStats }: StorageSettingsScreenProp
               Clear Reader Offline Cache
             </h4>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-              Purges TomeSphere-owned reader caches on this device without affecting your saved cloud library or notes.
+              Purges BookGarden-owned reader caches on this device without affecting your saved cloud library or notes.
             </p>
           </div>
 

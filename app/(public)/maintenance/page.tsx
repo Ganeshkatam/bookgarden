@@ -17,7 +17,7 @@ import { MaintenanceDocumentViewer } from "@/modules/announcements/presentation/
 export const metadata: Metadata = {
   title: "System Status & Maintenance Advisory",
   description:
-    "Official operational status and scheduled maintenance reports for TomeSphere digital library services.",
+    "Official operational status and scheduled maintenance reports for BookGarden digital library services.",
 };
 
 export const revalidate = 60; // Refresh every 60 seconds

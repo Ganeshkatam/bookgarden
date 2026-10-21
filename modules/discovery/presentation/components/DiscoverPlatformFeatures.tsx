@@ -47,13 +47,13 @@ export function DiscoverPlatformFeatures() {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div className="space-y-2 max-w-2xl">
             <span className="px-3 py-1 rounded-full bg-indigo-950/80 border border-indigo-700 text-indigo-300 text-xs font-black uppercase tracking-wider">
-              The TomeSphere Advantage
+              The BookGarden Advantage
             </span>
             <h3 className="text-2xl sm:text-3xl font-display font-extrabold tracking-tight">
               A Modern Digital Archive Built for Deep Reading
             </h3>
             <p className="text-xs sm:text-sm text-slate-300 font-sans leading-relaxed">
-              TomeSphere pairs universal public-domain preservation with powerful modern reading tooling, smart progress tracking, and distraction-free typography.
+              BookGarden pairs universal public-domain preservation with powerful modern reading tooling, smart progress tracking, and distraction-free typography.
             </p>
           </div>
 

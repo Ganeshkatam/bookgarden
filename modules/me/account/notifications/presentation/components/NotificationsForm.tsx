@@ -72,7 +72,7 @@ const TOGGLE_ITEMS: ToggleMeta[] = [
     key: "systemAnnouncementsEnabled",
     label: "System & Product Updates",
     description:
-      "Stay informed about new TomeSphere features, reader upgrades, and service notices.",
+      "Stay informed about new BookGarden features, reader upgrades, and service notices.",
     icon: Megaphone,
     iconColor: "text-sky-400",
     iconBg: "bg-sky-500/10 border-sky-500/20",

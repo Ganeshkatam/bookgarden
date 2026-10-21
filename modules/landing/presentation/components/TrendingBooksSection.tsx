@@ -10,7 +10,7 @@ export default function TrendingBooksSection({
   return (
     <BookShelfRow
       title="Popular"
-      description="Trending across TomeSphere."
+      description="Trending across BookGarden."
       viewAllHref="/discover/trending"
       viewAllTitle="All Popular Books"
       countLabel="Trending Now"

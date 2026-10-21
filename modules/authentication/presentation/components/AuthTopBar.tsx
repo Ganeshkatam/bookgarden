@@ -35,7 +35,7 @@ export default function AuthTopBar({ showLogo = false }: AuthTopBarProps) {
           <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-center">
             <Image
               src="/logo.png"
-              alt="TomeSphere Logo"
+              alt="BookGarden Logo"
               width={32}
               height={32}
               className="object-contain p-0.5"

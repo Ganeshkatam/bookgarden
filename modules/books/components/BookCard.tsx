@@ -59,11 +59,11 @@ export default function BookCard({
   const [isLoadingShelves, setIsLoadingShelves] = useState(false);
 
   const authorNames = useMemo(() => {
-    if (!book.authors || book.authors.length === 0) return "TomeSphere Library";
+    if (!book.authors || book.authors.length === 0) return "BookGarden Library";
     const names = book.authors
       .map((a: any) => (typeof a === "string" ? a : a?.name))
       .filter(Boolean);
-    return names.length > 0 ? names.join(", ") : "TomeSphere Library";
+    return names.length > 0 ? names.join(", ") : "BookGarden Library";
   }, [book.authors]);
 
   const year =

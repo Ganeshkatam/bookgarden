@@ -98,7 +98,7 @@ export default function ProfileSetupPage({
         <div className="text-center mb-8 animate-fadeIn">
           <span className="text-6xl mb-4 block"></span>
           <h1 className="text-4xl font-display font-bold mb-2">
-            Welcome to TomeSphere!
+            Welcome to BookGarden!
           </h1>
           <p style={{ color: "var(--text-secondary)" }}>
             Let&apos;s set up your profile to personalize your reading

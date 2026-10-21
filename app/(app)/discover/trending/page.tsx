@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Trending Volumes & Popular Now",
-  description: "Discover high-velocity reads, trending titles, and most-engaged books on TomeSphere.",
+  description: "Discover high-velocity reads, trending titles, and most-engaged books on BookGarden.",
 };
 
 export default async function TrendingPage() {

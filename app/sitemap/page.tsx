@@ -3,8 +3,8 @@ import { Compass, BookOpen, ShieldCheck, HelpCircle } from "lucide-react";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Sitemap | TomeSphere",
-  description: "Browse all pages, discovery catalogs, reader features, and policy resources available on TomeSphere.",
+  title: "Sitemap | BookGarden",
+  description: "Browse all pages, discovery catalogs, reader features, and policy resources available on BookGarden.",
 };
 
 export default function SitemapPage() {
@@ -48,7 +48,7 @@ export default function SitemapPage() {
       icon: HelpCircle,
       description: "Learn more about our platform mission, contact customer support, or submit feedback.",
       links: [
-        { href: "/about", label: "About TomeSphere" },
+        { href: "/about", label: "About BookGarden" },
         { href: "/contact", label: "Contact Us" },
         { href: "/support", label: "Help & Support Center" },
         { href: "/security", label: "Security Standards" },
@@ -77,10 +77,10 @@ export default function SitemapPage() {
         <div className="bg-[var(--surface-default)] p-8 sm:p-12 rounded-3xl border border-[var(--border-default)] shadow-sm">
           <div className="mb-10 pb-8 border-b border-[var(--border-default)]">
             <h1 className="text-3xl sm:text-4xl font-display font-bold text-[var(--text-primary)] mb-3">
-              TomeSphere Sitemap
+              BookGarden Sitemap
             </h1>
             <p className="text-sm sm:text-base text-[var(--text-secondary)] font-sans max-w-2xl">
-              A comprehensive index of public catalogs, personal workspace destinations, support channels, and legal policies on TomeSphere.
+              A comprehensive index of public catalogs, personal workspace destinations, support channels, and legal policies on BookGarden.
             </p>
           </div>
 

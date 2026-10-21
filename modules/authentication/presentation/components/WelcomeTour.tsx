@@ -39,7 +39,7 @@ export default function WelcomeTour({ isOpen, onClose }: WelcomeTourProps) {
 
   const tourSteps: TourStep[] = [
     {
-      title: "Welcome to TomeSphere! ",
+      title: "Welcome to BookGarden!",
       description:
         "Your ultimate book discovery and learning platform. Let's take a quick tour to get you started!",
       icon: <BookOpen size={48} className="text-indigo-400" />,
