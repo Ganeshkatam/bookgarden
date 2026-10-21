@@ -16,90 +16,130 @@ export class NotificationEventHandlers {
 
   public register(): void {
     // 1. Progress Level Up
-    this.eventBus.subscribe("progress.level.up", async (payload) => {
+    this.eventBus.subscribe("progress.level.up", async (payload, context) => {
       try {
         if (await this.isSuppressed(payload.userId, "readingRemindersEnabled")) {
           return;
         }
 
-        await this.notificationRepository.create({
+        const data = {
           userId: payload.userId,
           eventName: "progress.level.up",
           aggregateId: payload.level.toString(),
           aggregateType: "level",
-          type: "SUCCESS",
+          type: "SUCCESS" as const,
           title: "Level Up!",
           body: `Congratulations, you've reached level ${payload.level}: ${payload.title}!`,
           metadata: { level: payload.level, title: payload.title },
-        });
+        };
+
+        if (context?.eventId) {
+          await this.notificationRepository.create(data, {
+            eventId: context.eventId,
+            handlerName: "NotificationEventHandlers.progressLevelUp",
+          });
+        } else {
+          await this.notificationRepository.create(data);
+        }
       } catch (error) {
         console.error("[NotificationEventHandlers] Failed to create level up notification:", error);
+        throw error;
       }
     });
 
     // 2. Achievement Unlocked
-    this.eventBus.subscribe("progress.achievement.unlocked", async (payload) => {
+    this.eventBus.subscribe("progress.achievement.unlocked", async (payload, context) => {
       try {
         if (await this.isSuppressed(payload.userId, "readingRemindersEnabled")) {
           return;
         }
 
-        await this.notificationRepository.create({
+        const data = {
           userId: payload.userId,
           eventName: "progress.achievement.unlocked",
           aggregateId: payload.achievementId,
           aggregateType: "achievement",
-          type: "SUCCESS",
+          type: "SUCCESS" as const,
           title: "Achievement Unlocked",
           body: "You have unlocked a new achievement! Check your learning space.",
           metadata: { achievementId: payload.achievementId },
-        });
+        };
+
+        if (context?.eventId) {
+          await this.notificationRepository.create(data, {
+            eventId: context.eventId,
+            handlerName: "NotificationEventHandlers.progressAchievementUnlocked",
+          });
+        } else {
+          await this.notificationRepository.create(data);
+        }
       } catch (error) {
         console.error("[NotificationEventHandlers] Failed to create achievement notification:", error);
+        throw error;
       }
     });
 
     // 3. Book Completed
-    this.eventBus.subscribe("reader.book.completed", async (payload) => {
+    this.eventBus.subscribe("reader.book.completed", async (payload, context) => {
       try {
         if (await this.isSuppressed(payload.userId, "readingRemindersEnabled")) {
           return;
         }
 
-        await this.notificationRepository.create({
+        const data = {
           userId: payload.userId,
           eventName: "reader.book.completed",
           aggregateId: payload.bookId,
           aggregateType: "book",
-          type: "SUCCESS",
+          type: "SUCCESS" as const,
           title: "Book Completed",
           body: "You finished a book. Great work!",
           metadata: { bookId: payload.bookId },
-        });
+        };
+
+        if (context?.eventId) {
+          await this.notificationRepository.create(data, {
+            eventId: context.eventId,
+            handlerName: "NotificationEventHandlers.readerBookCompleted",
+          });
+        } else {
+          await this.notificationRepository.create(data);
+        }
       } catch (error) {
         console.error("[NotificationEventHandlers] Failed to create book completed notification:", error);
+        throw error;
       }
     });
 
     // 4. Book Added to Library
-    this.eventBus.subscribe("library.book.added", async (payload) => {
+    this.eventBus.subscribe("library.book.added", async (payload, context) => {
       try {
         if (await this.isSuppressed(payload.userId, "readingRemindersEnabled")) {
           return;
         }
 
-        await this.notificationRepository.create({
+        const data = {
           userId: payload.userId,
           eventName: "library.book.added",
           aggregateId: payload.bookId,
           aggregateType: "library_book",
-          type: "INFO",
+          type: "INFO" as const,
           title: "Added to Library",
           body: "A new book has been added to your library.",
           metadata: { bookId: payload.bookId, status: payload.status },
-        });
+        };
+
+        if (context?.eventId) {
+          await this.notificationRepository.create(data, {
+            eventId: context.eventId,
+            handlerName: "NotificationEventHandlers.libraryBookAdded",
+          });
+        } else {
+          await this.notificationRepository.create(data);
+        }
       } catch (error) {
         console.error("[NotificationEventHandlers] Failed to create library book notification:", error);
+        throw error;
       }
     });
   }

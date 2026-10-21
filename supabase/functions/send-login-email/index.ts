@@ -1,174 +1,27 @@
 // @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-
-interface SessionRecord {
-  id: string;
-  user_id: string;
-  created_at: string;
-  user_agent?: string;
-  ip?: string;
-}
-
-interface WebhookPayload {
-  type: string;
-  table: string;
-  schema: string;
-  record: SessionRecord;
-  old_record: Record<string, unknown> | null;
-}
-
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-function isValidUuid(value: unknown): value is string {
-  return typeof value === "string" && UUID_REGEX.test(value);
-}
-
-function escapeHtml(unsafe: string): string {
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function constantTimeEqual(a: string, b: string): boolean {
-  const encoder = new TextEncoder();
-  const aBuf = encoder.encode(a);
-  const bBuf = encoder.encode(b);
-  if (aBuf.byteLength !== bBuf.byteLength) {
-    return false;
-  }
-  return crypto.subtle.timingSafeEqual(aBuf, bBuf);
-}
+import {
+  validateWebhookRequest,
+  escapeHtml,
+  type SessionRecord,
+} from "./validator.ts";
 
 serve(async (req: Request) => {
-  const requestIdHeader = req.headers.get("x-request-id");
-  if (!requestIdHeader || !isValidUuid(requestIdHeader)) {
-    return new Response(
-      JSON.stringify({ error: "Missing or invalid X-Request-ID header; must be UUIDv4" }),
-      { status: 400, headers: { "Content-Type": "application/json" } },
-    );
+  const env = {
+    WEBHOOK_SECRET: Deno.env.get("WEBHOOK_SECRET"),
+    SUPABASE_SERVICE_ROLE_KEY: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+    SUPABASE_ANON_KEY: Deno.env.get("SUPABASE_ANON_KEY"),
+  };
+
+  const validation = await validateWebhookRequest(req, env);
+  if (!validation.ok) {
+    return validation.response;
   }
-  const requestId = requestIdHeader;
+
+  const { requestId, idempotencyKey, session } = validation;
 
   try {
-    // 1. Authenticate Inbound Webhook
-    const webhookSecret = Deno.env.get("WEBHOOK_SECRET");
-    if (!webhookSecret) {
-      console.error("[send-login-email] Misconfigured: WEBHOOK_SECRET is not set.");
-      return new Response(
-        JSON.stringify({ error: "Server misconfiguration", requestId }),
-        { status: 500, headers: { "Content-Type": "application/json" } },
-      );
-    }
-
-    const authHeader = req.headers.get("Authorization") || req.headers.get("authorization");
-    if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized", requestId }),
-        { status: 401, headers: { "Content-Type": "application/json" } },
-      );
-    }
-
-    const incomingToken = authHeader.substring(7).trim();
-    if (!constantTimeEqual(incomingToken, webhookSecret)) {
-      console.warn(`[send-login-email] Invalid webhook token presented (requestId: ${requestId})`);
-      return new Response(
-        JSON.stringify({ error: "Unauthorized", requestId }),
-        { status: 401, headers: { "Content-Type": "application/json" } },
-      );
-    }
-
-    // 2. Validate Request Timestamp Window (mandatory, +/- 300 seconds)
-    const timestampHeader = req.headers.get("x-timestamp");
-    if (!timestampHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing mandatory X-Timestamp header", requestId }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
-    }
-
-    const parsedTime = Date.parse(timestampHeader);
-    if (isNaN(parsedTime) || Math.abs(Date.now() - parsedTime) > 300_000) {
-      return new Response(
-        JSON.stringify({ error: "Request timestamp outside permitted 300-second window", requestId }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
-    }
-
-    // 3. Pre-Claim Payload & Bounds Validation
-    const idempotencyHeader = req.headers.get("idempotency-key");
-    if (!idempotencyHeader || !isValidUuid(idempotencyHeader)) {
-      return new Response(
-        JSON.stringify({ error: "Missing or invalid Idempotency-Key header; must be UUIDv4", requestId }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
-    }
-    const idempotencyKey = idempotencyHeader;
-
-    let rawBody: unknown;
-    try {
-      rawBody = await req.json();
-    } catch {
-      return new Response(
-        JSON.stringify({ error: "Invalid JSON payload", requestId }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
-    }
-
-    if (!rawBody || typeof rawBody !== "object") {
-      return new Response(
-        JSON.stringify({ error: "Invalid payload structure", requestId }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
-    }
-
-    const payload = rawBody as Partial<WebhookPayload>;
-    if (
-      payload.type !== "INSERT" ||
-      payload.schema !== "auth" ||
-      payload.table !== "sessions" ||
-      !payload.record ||
-      typeof payload.record !== "object"
-    ) {
-      return new Response(
-        JSON.stringify({ error: "Invalid webhook payload structure", requestId }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
-    }
-
-    const rawSession = payload.record;
-    if (!isValidUuid(rawSession.id) || !isValidUuid(rawSession.user_id)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid session or user identifier", requestId }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
-    }
-
-    // Enforce strict size bounds and strip control characters on caller-controlled metadata
-    const userAgentBounded = typeof rawSession.user_agent === "string"
-      ? rawSession.user_agent.replace(/[\x00-\x1F\x7F]/g, "").trim().slice(0, 512)
-      : undefined;
-
-    const ipBounded = typeof rawSession.ip === "string"
-      ? rawSession.ip.replace(/[\x00-\x1F\x7F\s]/g, "").slice(0, 45)
-      : undefined;
-
-    const sessionCreatedAt = typeof rawSession.created_at === "string" && !isNaN(Date.parse(rawSession.created_at))
-      ? rawSession.created_at
-      : new Date().toISOString();
-
-    const session: SessionRecord = {
-      id: rawSession.id,
-      user_id: rawSession.user_id,
-      created_at: sessionCreatedAt,
-      user_agent: userAgentBounded,
-      ip: ipBounded,
-    };
-
     // 4. Initialize Privileged Internal Supabase Client
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";

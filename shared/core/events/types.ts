@@ -209,11 +209,26 @@ export interface EventPayloads {
   "discovery.search.trending_updated": { timestamp: string };
 }
 
+export interface EventContext {
+  eventId?: string;
+  occurredAt?: string;
+}
+
 // 3. The Contract for the Event Bus
 export interface IEventBus {
-  emit<T extends PlatformEventName>(event: T, payload: EventPayloads[T]): void;
+  emit<T extends PlatformEventName>(
+    event: T,
+    payload: EventPayloads[T],
+    context?: EventContext,
+  ): void;
+  dispatch<T extends PlatformEventName>(
+    event: T,
+    payload: EventPayloads[T],
+    context?: EventContext,
+  ): Promise<void>;
   subscribe<T extends PlatformEventName>(
     event: T,
-    handler: (payload: EventPayloads[T]) => void | Promise<void>,
+    handler: (payload: EventPayloads[T], context?: EventContext) => void | Promise<void>,
   ): () => void;
 }
+

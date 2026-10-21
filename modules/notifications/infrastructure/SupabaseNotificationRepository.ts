@@ -1,5 +1,8 @@
 import { SupabaseClient } from "@supabase/supabase-js";
-import { INotificationRepository } from "../domain/repositories/INotificationRepository";
+import {
+  INotificationRepository,
+  NotificationIdempotency,
+} from "../domain/repositories/INotificationRepository";
 import { Notification } from "../domain/Notification";
 
 /**
@@ -26,7 +29,32 @@ export class SupabaseNotificationRepository implements INotificationRepository {
 
   async create(
     notification: Omit<Notification, "id" | "createdAt" | "readAt">,
+    idempotency?: NotificationIdempotency,
   ): Promise<void> {
+    if (idempotency?.eventId) {
+      const { error } = await this.supabase.rpc("create_notification_idempotent" as any, {
+        p_event_id: idempotency.eventId,
+        p_handler: idempotency.handlerName || "NotificationHandler",
+        p_user_id: notification.userId,
+        p_event_name: notification.eventName,
+        p_aggregate_id: notification.aggregateId,
+        p_aggregate_type: notification.aggregateType,
+        p_type: notification.type,
+        p_title: notification.title,
+        p_body: notification.body,
+        p_metadata: notification.metadata || {},
+      });
+
+      if (error) {
+        console.error(
+          "[SupabaseNotificationRepository] Failed to create idempotent notification:",
+          error,
+        );
+        throw error;
+      }
+      return;
+    }
+
     const { error } = await this.supabase.from("notifications").insert({
       user_id: notification.userId,
       event_name: notification.eventName,

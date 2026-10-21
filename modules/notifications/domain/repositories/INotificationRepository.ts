@@ -1,5 +1,10 @@
 import { Notification } from "../Notification";
 
+export interface NotificationIdempotency {
+  eventId?: string;
+  handlerName?: string;
+}
+
 /**
  * Domain repository contract for notification persistence.
  *
@@ -12,9 +17,12 @@ export interface INotificationRepository {
    * Persists a new notification.
    * The repository is responsible for generating the `id` and `createdAt`
    * fields; callers provide domain-level data only.
+   * Accepts optional idempotency metadata (eventId, handlerName) to guarantee
+   * transactional, deduplicated insertion against public.processed_events.
    */
   create(
     notification: Omit<Notification, "id" | "createdAt" | "readAt">,
+    idempotency?: NotificationIdempotency,
   ): Promise<void>;
 
   /**

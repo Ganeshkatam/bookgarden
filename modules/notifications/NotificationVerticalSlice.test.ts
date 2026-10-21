@@ -4,11 +4,11 @@ import { Notification } from "./domain/Notification";
 import { IEventBus, PlatformEventName, EventPayloads } from "@/shared/core/events/types";
 
 class TestEventBus implements IEventBus {
-  private handlers: Map<string, Array<(payload: any) => Promise<void> | void>> = new Map();
+  private handlers: Map<string, Array<(payload: any, context?: any) => Promise<void> | void>> = new Map();
 
   subscribe<T extends PlatformEventName>(
     event: T,
-    handler: (payload: EventPayloads[T]) => void | Promise<void>,
+    handler: (payload: EventPayloads[T], context?: any) => void | Promise<void>,
   ): () => void {
     if (!this.handlers.has(event)) {
       this.handlers.set(event, []);
@@ -17,17 +17,22 @@ class TestEventBus implements IEventBus {
     return () => {};
   }
 
-  async publish<T extends PlatformEventName>(event: T, payload: EventPayloads[T]): Promise<void> {
+  async publish<T extends PlatformEventName>(event: T, payload: EventPayloads[T], context?: any): Promise<void> {
     const list = this.handlers.get(event) || [];
     for (const handler of list) {
-      await handler(payload);
+      await handler(payload, context);
     }
   }
 
-  emit<T extends PlatformEventName>(event: T, payload: EventPayloads[T]): void {
-    this.publish(event, payload);
+  async dispatch<T extends PlatformEventName>(event: T, payload: EventPayloads[T], context?: any): Promise<void> {
+    await this.publish(event, payload, context);
+  }
+
+  emit<T extends PlatformEventName>(event: T, payload: EventPayloads[T], context?: any): void {
+    this.publish(event, payload, context);
   }
 }
+
 
 describe("Notifications Vertical Slice & Event Flow", () => {
   let eventBus: TestEventBus;
@@ -183,5 +188,45 @@ describe("Notifications Vertical Slice & Event Flow", () => {
 
     // User 1 notification remains unread
     expect(await repository.getUnreadCount("user-1")).toBe(1);
+  });
+
+  it("propagates repository creation failure to dispatcher instead of silently swallowing it", async () => {
+    jest.spyOn(repository, "create").mockRejectedValueOnce(
+      new Error("Database connection lost during notification insert"),
+    );
+
+    await expect(
+      eventBus.dispatch("reader.book.completed", {
+        userId: "user-fail",
+        bookId: "book-fail",
+      }),
+    ).rejects.toThrow("Database connection lost during notification insert");
+  });
+
+  it("forwards eventId and handlerName to repository.create when dispatched with event context", async () => {
+    const createSpy = jest.spyOn(repository, "create");
+
+    await eventBus.dispatch(
+      "reader.book.completed",
+      {
+        userId: "user-idempotent",
+        bookId: "book-idempotent",
+      },
+      {
+        eventId: "event-uuid-789",
+        occurredAt: "2026-10-09T00:00:00Z",
+      },
+    );
+
+    expect(createSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-idempotent",
+        eventName: "reader.book.completed",
+      }),
+      {
+        eventId: "event-uuid-789",
+        handlerName: "NotificationEventHandlers.readerBookCompleted",
+      },
+    );
   });
 });
