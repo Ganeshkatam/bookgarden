@@ -35,12 +35,14 @@ async function getAuditContext(userId?: string) {
     hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     null;
 
-  const sanitizedIp =
-    rawIp && /^[\da-fA-F.:]+$/.test(rawIp) ? rawIp : "127.0.0.1";
+  // Validate against IPv4/IPv6 format. Return null if no valid IP header was provided by edge proxy.
+  // Never fall back to a shared dummy IP (e.g. 127.0.0.1) to avoid pooling unrelated clients into one rate limit bucket.
+  const validatedIp =
+    rawIp && /^[\da-fA-F.:]+$/.test(rawIp) ? rawIp : null;
 
   return {
     actorId: userId || null,
-    ipAddress: sanitizedIp,
+    ipAddress: validatedIp,
     userAgent: hdrs.get("user-agent") || null,
   };
 }
@@ -110,30 +112,32 @@ export async function loginWithPassword(
     const auditLogger = new PostgresAuditLogger(supabase);
     const context = await getAuditContext();
 
-    // Layer 1: Client Network / IP Rate Limit
+    // Layer 1: Client Network / IP Rate Limit (only enforced when a valid edge IP is present)
     // Prevents automated distributed lockout DoS on arbitrary accounts and limits credential stuffing.
-    const ipKey = buildIpRateLimitKey(context.ipAddress);
-    const ipCheck = await rateLimiter.consume(
-      ipKey,
-      MAX_IP_LOGIN_ATTEMPTS,
-      RATE_LIMIT_WINDOW_MS,
-      LOCKOUT_DURATION_MS,
-    );
-
-    if (!ipCheck.allowed) {
-      const retryMinutes = Math.ceil(
-        (ipCheck.retryAfterMs || LOCKOUT_DURATION_MS) / 60000,
+    if (context.ipAddress) {
+      const ipKey = buildIpRateLimitKey(context.ipAddress);
+      const ipCheck = await rateLimiter.consume(
+        ipKey,
+        MAX_IP_LOGIN_ATTEMPTS,
+        RATE_LIMIT_WINDOW_MS,
+        LOCKOUT_DURATION_MS,
       );
-      await auditLogger.logAction(SecurityAction.AccountLocked, context, {
-        email: emailOrPhone,
-        reason: "ip_rate_limit_exceeded",
-      });
-      return {
-        success: false,
-        error: {
-          message: `Too many requests from this network. Please try again in ${retryMinutes} minutes.`,
-        },
-      };
+
+      if (!ipCheck.allowed) {
+        const retryMinutes = Math.ceil(
+          (ipCheck.retryAfterMs || LOCKOUT_DURATION_MS) / 60000,
+        );
+        await auditLogger.logAction(SecurityAction.AccountLocked, context, {
+          email: emailOrPhone,
+          reason: "ip_rate_limit_exceeded",
+        });
+        return {
+          success: false,
+          error: {
+            message: `Too many requests from this network. Please try again in ${retryMinutes} minutes.`,
+          },
+        };
+      }
     }
 
     // Layer 2: Target Account Rate Limit
@@ -176,7 +180,17 @@ export async function loginWithPassword(
         });
 
     if (signInResult.error) {
-      if (rateCheck.remaining === 0) {
+      // Record failure with attempt start time comparison to eliminate in-flight erase races
+      const failResult = rateCheck.attemptTime
+        ? await rateLimiter.recordFailure(
+            rateLimitKey,
+            rateCheck.attemptTime,
+            MAX_LOGIN_ATTEMPTS,
+            LOCKOUT_DURATION_MS,
+          )
+        : { locked: rateCheck.remaining === 0, remaining: rateCheck.remaining };
+
+      if (failResult.locked || failResult.remaining === 0) {
         await auditLogger.logAction(SecurityAction.AccountLocked, context, {
           email: emailOrPhone,
           reason: "max_attempts_reached",
@@ -184,7 +198,7 @@ export async function loginWithPassword(
       }
       await auditLogger.logAction(SecurityAction.LoginFailed, context, {
         email: emailOrPhone,
-        remaining: rateCheck.remaining,
+        remaining: failResult.remaining,
       });
       return {
         success: false,

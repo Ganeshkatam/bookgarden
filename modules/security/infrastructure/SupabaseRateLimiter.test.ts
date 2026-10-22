@@ -227,5 +227,58 @@ describe("SupabaseRateLimiter — Atomic Rate Limiting Specification", () => {
         p_key: "login:reset:test",
       });
     });
+
+    it("recordFailure invokes record_login_failure RPC and returns result", async () => {
+      const limiter = new SupabaseRateLimiter(mockSupabase as unknown as SupabaseClient);
+      const attemptTime = new Date().toISOString();
+
+      mockRpc.mockResolvedValueOnce({
+        data: [{ locked: false, attempts: 2, remaining: 3, retry_after_ms: 0 }],
+        error: null,
+      });
+
+      const result = await limiter.recordFailure("login:fail:test", attemptTime, 5, 3600000);
+
+      expect(mockRpc).toHaveBeenCalledWith("record_login_failure", {
+        p_key: "login:fail:test",
+        p_attempt_time: attemptTime,
+        p_max_attempts: 5,
+        p_lockout_seconds: 3600,
+      });
+      expect(result.locked).toBe(false);
+      expect(result.remaining).toBe(3);
+    });
+
+    it("recordFailure handles lockout and returns retryAfterMs", async () => {
+      const limiter = new SupabaseRateLimiter(mockSupabase as unknown as SupabaseClient);
+      const attemptTime = new Date().toISOString();
+
+      mockRpc.mockResolvedValueOnce({
+        data: [{ locked: true, attempts: 5, remaining: 0, retry_after_ms: 3600000 }],
+        error: null,
+      });
+
+      const result = await limiter.recordFailure("login:fail:test", attemptTime, 5, 3600000);
+
+      expect(result.locked).toBe(true);
+      expect(result.remaining).toBe(0);
+      expect(result.retryAfterMs).toBe(3600000);
+    });
+
+    it("recordFailure fails closed if RPC returns error", async () => {
+      const limiter = new SupabaseRateLimiter(mockSupabase as unknown as SupabaseClient);
+      const attemptTime = new Date().toISOString();
+
+      mockRpc.mockResolvedValueOnce({
+        data: null,
+        error: { message: "database offline" },
+      });
+
+      const result = await limiter.recordFailure("login:fail:test", attemptTime, 5, 3600000);
+
+      expect(result.locked).toBe(true);
+      expect(result.remaining).toBe(0);
+      expect(result.retryAfterMs).toBe(60000);
+    });
   });
 });

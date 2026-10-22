@@ -13,6 +13,11 @@ const DEFAULT_RATE_LIMIT_SALT = "bookgarden_rate_limit_secret_salt_v1";
  * zero data loss, requires no schema migrations, and resets brute-force windows safely.
  */
 export function getRateLimitSecret(): string {
+  if (process.env.NODE_ENV === "production" && !process.env.RATE_LIMIT_HMAC_SECRET) {
+    throw new Error(
+      "[Security Configuration Error] RATE_LIMIT_HMAC_SECRET must be configured in production environment.",
+    );
+  }
   return (
     process.env.RATE_LIMIT_HMAC_SECRET ||
     process.env.SUPABASE_SERVICE_ROLE_KEY ||

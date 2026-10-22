@@ -12,6 +12,8 @@ export interface RateLimitResult {
   remaining: number;
   /** Milliseconds until the limit resets (if blocked) */
   retryAfterMs?: number;
+  /** ISO timestamp token representing attempt inception for race-free failure tracking */
+  attemptTime?: string;
 }
 
 export interface RateLimiter {
@@ -34,6 +36,17 @@ export interface RateLimiter {
     windowMs: number,
     lockoutMs: number,
   ): Promise<RateLimitResult>;
+
+  /**
+   * Record a verified authentication failure for the given key and attempt start time.
+   * Compares attempt start time against the last successful login to eliminate in-flight erase races.
+   */
+  recordFailure(
+    key: string,
+    attemptTime: string,
+    maxAttempts: number,
+    lockoutMs: number,
+  ): Promise<{ locked: boolean; remaining: number; retryAfterMs?: number }>;
 
   /**
    * Record a failed attempt for the given key.

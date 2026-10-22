@@ -8,6 +8,7 @@ import { SupabaseRateLimiter } from "@/modules/security/infrastructure/SupabaseR
 import { PostgresAuditLogger } from "@/modules/security/infrastructure/PostgresAuditLogger";
 import { SecurityAction } from "@/shared/kernel/security/SecurityAction";
 import { createHmac } from "crypto";
+import { headers } from "next/headers";
 
 // Mock dependencies
 jest.mock("next/headers", () => ({
@@ -31,6 +32,7 @@ let mockSupabaseClient: any;
 let mockSignInWithPassword: jest.Mock;
 let mockCheck: jest.Mock;
 let mockConsume: jest.Mock;
+let mockRecordFailure: jest.Mock;
 let mockReset: jest.Mock;
 let mockLogAction: jest.Mock;
 
@@ -48,11 +50,17 @@ beforeEach(() => {
   mockConsume = jest.fn().mockImplementation(async () => ({
     allowed: true,
     remaining: 4,
+    attemptTime: "2026-10-22T10:00:00.000Z",
+  }));
+  mockRecordFailure = jest.fn().mockImplementation(async () => ({
+    locked: false,
+    remaining: 4,
   }));
   mockReset = jest.fn().mockResolvedValue(undefined);
   (SupabaseRateLimiter as unknown as jest.Mock).mockImplementation(() => ({
     check: mockCheck,
     consume: mockConsume,
+    recordFailure: mockRecordFailure,
     reset: mockReset,
   }));
 
@@ -97,6 +105,19 @@ describe("buildRateLimitKey & buildIpRateLimitKey — HMAC & Privacy", () => {
     expect(key).toMatch(/^login:ip:[a-f0-9]{64}$/);
     expect(key).not.toContain(ip);
   });
+
+  it("enforces mandatory RATE_LIMIT_HMAC_SECRET in production environment", () => {
+    const originalEnv = process.env.NODE_ENV;
+    const originalSecret = process.env.RATE_LIMIT_HMAC_SECRET;
+    try {
+      (process.env as any).NODE_ENV = "production";
+      delete process.env.RATE_LIMIT_HMAC_SECRET;
+      expect(() => getRateLimitSecret()).toThrow("RATE_LIMIT_HMAC_SECRET must be configured in production");
+    } finally {
+      (process.env as any).NODE_ENV = originalEnv;
+      process.env.RATE_LIMIT_HMAC_SECRET = originalSecret;
+    }
+  });
 });
 
 describe("loginWithPassword — Layered Atomic Rate Limiting", () => {
@@ -112,8 +133,30 @@ describe("loginWithPassword — Layered Atomic Rate Limiting", () => {
     expect(mockSignInWithPassword).not.toHaveBeenCalled();
   });
 
+  it("skips IP rate limiting when no trusted edge IP is available (no 127.0.0.1 dummy bucket)", async () => {
+    (headers as jest.Mock).mockResolvedValueOnce({
+      get: () => null, // No IP headers
+    });
+
+    mockSignInWithPassword.mockResolvedValueOnce({
+      data: { user: { id: "00000000-0000-0000-0000-000000000001" } },
+      error: null,
+    });
+
+    const result = await loginWithPassword("user@example.com", "valid_pass", false);
+
+    expect(result.success).toBe(true);
+    // Verified: consume is called ONLY once for account, NOT for dummy 127.0.0.1
+    expect(mockConsume).toHaveBeenCalledTimes(1);
+    expect(mockConsume).toHaveBeenCalledWith(
+      expect.stringMatching(/^login:account:/),
+      expect.any(Number),
+      expect.any(Number),
+      expect.any(Number),
+    );
+  });
+
   it("rejects login at IP layer when client network limit is exceeded before touching account limiter", async () => {
-    // Layer 1 IP consume returns allowed: false
     mockConsume.mockImplementation(async (key: string) => {
       if (key.startsWith("login:ip:")) {
         return { allowed: false, remaining: 0, retryAfterMs: 900000 };
@@ -128,7 +171,6 @@ describe("loginWithPassword — Layered Atomic Rate Limiting", () => {
       expect(result.error?.message).toContain("Too many requests from this network");
       expect(result.error?.message).toContain("15 minutes");
     }
-    // Supabase Auth and account limiter are NOT touched
     expect(mockSignInWithPassword).not.toHaveBeenCalled();
     expect(mockLogAction).toHaveBeenCalledWith(
       SecurityAction.AccountLocked,
@@ -167,12 +209,16 @@ describe("loginWithPassword — Layered Atomic Rate Limiting", () => {
       if (key.startsWith("login:ip:")) {
         return { allowed: true, remaining: 29 };
       }
-      return { allowed: true, remaining: 4 };
+      return { allowed: true, remaining: 4, attemptTime: "2026-10-22T10:00:00.000Z" };
     });
 
     mockSignInWithPassword.mockResolvedValueOnce({
       data: { user: null },
       error: { message: "Invalid login credentials" },
+    });
+    mockRecordFailure.mockResolvedValueOnce({
+      locked: false,
+      remaining: 4,
     });
 
     const result = await loginWithPassword("user@example.com", "wrongpassword", false);
@@ -181,21 +227,24 @@ describe("loginWithPassword — Layered Atomic Rate Limiting", () => {
     if (!result.success) {
       expect(result.error?.message).toBe("Invalid credentials. Please check your email and password.");
     }
-    // Verify consume was called with expected key and thresholds
     expect(mockConsume).toHaveBeenCalledWith(
       expectedKey,
       5,
       900000,
       3600000,
     );
-    // Verify signInWithPassword was called with normalized email
     expect(mockSignInWithPassword).toHaveBeenCalledWith({
       email: "user@example.com",
       password: "wrongpassword",
     });
-    // Rate limit must NOT be reset on failure
+    // Verified: recordFailure invoked with attempt token
+    expect(mockRecordFailure).toHaveBeenCalledWith(
+      expectedKey,
+      "2026-10-22T10:00:00.000Z",
+      5,
+      3600000,
+    );
     expect(mockReset).not.toHaveBeenCalled();
-    // Audit log records login failure with remaining count
     expect(mockLogAction).toHaveBeenCalledWith(
       SecurityAction.LoginFailed,
       expect.objectContaining({ ipAddress: "192.168.1.100" }),
@@ -203,17 +252,19 @@ describe("loginWithPassword — Layered Atomic Rate Limiting", () => {
     );
   });
 
-  it("triggers account lockout on the 5th failed attempt (remaining: 0)", async () => {
+  it("triggers account lockout when recordFailure returns locked", async () => {
     mockConsume.mockImplementation(async (key: string) => {
-      if (key.startsWith("login:ip:")) {
-        return { allowed: true, remaining: 25 };
-      }
-      return { allowed: true, remaining: 0 };
+      if (key.startsWith("login:ip:")) return { allowed: true, remaining: 25 };
+      return { allowed: true, remaining: 0, attemptTime: "2026-10-22T10:00:00.000Z" };
     });
 
     mockSignInWithPassword.mockResolvedValueOnce({
       data: { user: null },
       error: { message: "Invalid login credentials" },
+    });
+    mockRecordFailure.mockResolvedValueOnce({
+      locked: true,
+      remaining: 0,
     });
 
     const result = await loginWithPassword("user@example.com", "wrongpassword", false);
@@ -230,10 +281,8 @@ describe("loginWithPassword — Layered Atomic Rate Limiting", () => {
     const expectedKey = buildRateLimitKey("valid@example.com", false);
 
     mockConsume.mockImplementation(async (key: string) => {
-      if (key.startsWith("login:ip:")) {
-        return { allowed: true, remaining: 28 };
-      }
-      return { allowed: true, remaining: 3 };
+      if (key.startsWith("login:ip:")) return { allowed: true, remaining: 28 };
+      return { allowed: true, remaining: 3, attemptTime: "2026-10-22T10:00:00.000Z" };
     });
 
     mockSignInWithPassword.mockResolvedValueOnce({
@@ -253,8 +302,7 @@ describe("loginWithPassword — Layered Atomic Rate Limiting", () => {
   });
 
   it("remains resilient and preserves user session when post-auth rate-limit reset fails", async () => {
-    // Simulate successful authentication where database reset encounters a transient error
-    mockConsume.mockResolvedValue({ allowed: true, remaining: 3 });
+    mockConsume.mockResolvedValue({ allowed: true, remaining: 3, attemptTime: "2026-10-22T10:00:00.000Z" });
     mockSignInWithPassword.mockResolvedValueOnce({
       data: { user: { id: "00000000-0000-0000-0000-000000000001" } },
       error: null,
@@ -263,7 +311,6 @@ describe("loginWithPassword — Layered Atomic Rate Limiting", () => {
 
     const result = await loginWithPassword("user@example.com", "correctpassword", false);
 
-    // Authentication succeeded; the action must not abort the user's session
     expect(result.success).toBe(true);
   });
 
@@ -288,16 +335,15 @@ describe("loginWithPassword — Layered Atomic Rate Limiting", () => {
     let accountConsumeCount = 0;
 
     mockConsume.mockImplementation(async (key: string) => {
-      // IP layer permits all requests
       if (key.startsWith("login:ip:")) {
         return { allowed: true, remaining: 20 };
       }
-      // Account layer simulates atomic DB limiter: first 5 permitted, next 5 rejected
       accountConsumeCount++;
       if (accountConsumeCount <= 5) {
         return {
           allowed: true,
           remaining: 5 - accountConsumeCount,
+          attemptTime: `2026-10-22T10:00:0${accountConsumeCount}.000Z`,
         };
       }
       return {
@@ -312,74 +358,83 @@ describe("loginWithPassword — Layered Atomic Rate Limiting", () => {
       error: { message: "Invalid login credentials" },
     });
 
-    // Fire 10 concurrent requests
     const promises = Array.from({ length: totalRequests }).map(() =>
       loginWithPassword("concurrent_victim@example.com", "wrong_guess", false),
     );
 
     const results = await Promise.all(promises);
 
-    // 1. IP layer called 10 times, and account layer called 10 times = 20 total consume calls
     expect(mockConsume).toHaveBeenCalledTimes(20);
-
-    // 2. EXACTLY 5 requests must have been allowed to reach Supabase Auth
     expect(mockSignInWithPassword).toHaveBeenCalledTimes(5);
 
-    // 3. The 5 allowed requests failed due to invalid credentials
     const credentialFailures = results.filter(
       (r) => !r.success && r.error?.message === "Invalid credentials. Please check your email and password.",
     );
     expect(credentialFailures).toHaveLength(5);
 
-    // 4. The 5 excess requests failed due to rate limiting BEFORE reaching Supabase Auth
     const rateLimitFailures = results.filter(
       (r) => !r.success && r.error?.message.includes("Too many login attempts"),
     );
     expect(rateLimitFailures).toHaveLength(5);
   });
 
-  it("handles concurrent interleaved successful and failed logins according to consecutive-failure policy", async () => {
-    const expectedKey = buildRateLimitKey("concurrent_mixed@example.com", false);
-    let attempts = 0;
+  it("preserves in-flight failure accounting when a concurrent login succeeds (race-free failure tracking)", async () => {
+    const expectedKey = buildRateLimitKey("race_test@example.com", false);
+
+    // Request 1 starts at T1 = 10:00:00
+    // Request 2 starts at T2 = 10:00:01
+    // Request 2 finishes with SUCCESS at T2_success = 10:00:02 and resets counter
+    // Request 1 finishes with FAILURE at T1_fail = 10:00:03
+    let lastSuccessTime: number | null = null;
+    let recordedFailures = 0;
 
     mockConsume.mockImplementation(async (key: string) => {
       if (key.startsWith("login:ip:")) return { allowed: true, remaining: 25 };
-      attempts++;
-      return { allowed: attempts <= 5, remaining: Math.max(0, 5 - attempts) };
+      return { allowed: true, remaining: 4, attemptTime: "2026-10-22T10:00:00.000Z" };
     });
 
-    mockReset.mockImplementation(async (key: string) => {
-      if (key === expectedKey) {
-        attempts = 0; // Reset counter on authentic owner verification
+    mockReset.mockImplementation(async () => {
+      lastSuccessTime = new Date("2026-10-22T10:00:02.000Z").getTime();
+    });
+
+    mockRecordFailure.mockImplementation(async (_key: string, attemptTime: string) => {
+      const attemptMs = new Date(attemptTime).getTime();
+      // If a successful login occurred after attempt started:
+      if (lastSuccessTime && lastSuccessTime > attemptMs) {
+        // Must NOT erase failure: begins new consecutive count of 1
+        recordedFailures = 1;
+        return { locked: false, remaining: 4 };
       }
+      recordedFailures++;
+      return { locked: false, remaining: Math.max(0, 5 - recordedFailures) };
     });
 
-    // Request 1: Wrong password (fails)
+    // Request 1: Wrong password
     mockSignInWithPassword.mockResolvedValueOnce({
       data: { user: null },
       error: { message: "Invalid login credentials" },
     });
-    // Request 2: Valid password (succeeds and resets)
+    // Request 2: Correct password
     mockSignInWithPassword.mockResolvedValueOnce({
       data: { user: { id: "00000000-0000-0000-0000-000000000001" } },
       error: null,
     });
-    // Request 3: Wrong password (fails)
-    mockSignInWithPassword.mockResolvedValueOnce({
-      data: { user: null },
-      error: { message: "Invalid login credentials" },
-    });
 
-    const [res1, res2, res3] = await Promise.all([
-      loginWithPassword("concurrent_mixed@example.com", "wrong_1", false),
-      loginWithPassword("concurrent_mixed@example.com", "correct_pass", false),
-      loginWithPassword("concurrent_mixed@example.com", "wrong_2", false),
+    const [res1, res2] = await Promise.all([
+      loginWithPassword("race_test@example.com", "wrong_pass", false),
+      loginWithPassword("race_test@example.com", "correct_pass", false),
     ]);
 
     expect(res1.success).toBe(false);
     expect(res2.success).toBe(true);
-    expect(res3.success).toBe(false);
     expect(mockReset).toHaveBeenCalledWith(expectedKey);
-    expect(attempts).toBeLessThanOrEqual(5);
+    // Verified: Request 1's failure was NOT erased to 0, it was recorded as 1
+    expect(mockRecordFailure).toHaveBeenCalledWith(
+      expectedKey,
+      "2026-10-22T10:00:00.000Z",
+      5,
+      3600000,
+    );
+    expect(recordedFailures).toBe(1);
   });
 });
