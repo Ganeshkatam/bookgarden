@@ -1,7 +1,8 @@
 -- Migration Rollback: 20261022020000_harden_storage_authorization_rollback.sql
--- Description: Rollback script for storage authorization hardening.
--- WARNING: Reverts storage.objects policies to the pre-hardening baseline.
--- Do not run in production unless strictly necessary to recover from an operational fault.
+-- Description: Baseline rollback script for storage authorization hardening.
+-- WARNING: DO NOT EXECUTE IN PRODUCTION AS WRITTEN.
+-- This script restores legacy permissive policies (including unauthenticated avatar uploads
+-- and un-prefixed bucket writes). In production, prefer fix-forward or a targeted corrective migration.
 
 -- 1. Drop hardened storage policies
 DROP POLICY IF EXISTS "avatars_select_public" ON storage.objects;

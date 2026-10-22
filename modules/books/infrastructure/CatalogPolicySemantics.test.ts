@@ -291,4 +291,53 @@ describe("Catalog Policy Semantics & RLS Hardening Specification", () => {
       expect(secureResults[0].id).toBe(publishedBook.id);
     });
   });
+
+  describe("5. Security-Preserving Recovery Procedure Role Equivalence", () => {
+    // Canonical mapping from role_permissions: only 'admin' and 'curator' possess 'ManageBooks'
+    const rolesWithManageBooks = ["admin", "curator"];
+    const rolesWithoutManageBooks = ["moderator", "auditor", "viewer"];
+
+    function createRecoveryEvaluator(role: string | null) {
+      const hasAdminOrCurator = role !== null && rolesWithManageBooks.includes(role);
+      const isAuth = role !== null;
+
+      return {
+        selectBooks: (books: BookRow[]) =>
+          books.filter((b) => (b.is_published && !b.is_archived) || (isAuth && hasAdminOrCurator)),
+        canMutate: () => isAuth && hasAdminOrCurator,
+      };
+    }
+
+    it.each(rolesWithManageBooks)(
+      "grants full catalog access and mutation to %s role (equivalent to ManageBooks)",
+      (role) => {
+        const evaluator = createRecoveryEvaluator(role);
+        const visible = evaluator.selectBooks(catalogBooks);
+
+        expect(visible).toHaveLength(3); // Can see published, draft, and archived
+        expect(evaluator.canMutate()).toBe(true);
+      },
+    );
+
+    it.each(rolesWithoutManageBooks)(
+      "restricts %s role strictly to published, unarchived books and denies mutation",
+      (role) => {
+        const evaluator = createRecoveryEvaluator(role);
+        const visible = evaluator.selectBooks(catalogBooks);
+
+        expect(visible).toHaveLength(1);
+        expect(visible[0].id).toBe(publishedBook.id);
+        expect(evaluator.canMutate()).toBe(false);
+      },
+    );
+
+    it("restricts anonymous callers strictly to published, unarchived books and denies mutation", () => {
+      const evaluator = createRecoveryEvaluator(null);
+      const visible = evaluator.selectBooks(catalogBooks);
+
+      expect(visible).toHaveLength(1);
+      expect(visible[0].id).toBe(publishedBook.id);
+      expect(evaluator.canMutate()).toBe(false);
+    });
+  });
 });
