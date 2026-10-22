@@ -96,10 +96,17 @@ describe("Notifications Vertical Slice & Event Flow", () => {
   });
 
   it("should create notification when reader.book.completed event is published", async () => {
-    await eventBus.publish("reader.book.completed", {
-      userId: "user-1",
-      bookId: "book-100",
-    });
+    await eventBus.publish(
+      "reader.book.completed",
+      {
+        userId: "user-1",
+        bookId: "book-100",
+      },
+      {
+        eventId: "event-completed-1",
+        occurredAt: new Date().toISOString(),
+      },
+    );
 
     const unread = await repository.listUnreadForUser("user-1");
     expect(unread).toHaveLength(1);
@@ -134,10 +141,17 @@ describe("Notifications Vertical Slice & Event Flow", () => {
   });
 
   it("should mark a single notification as read", async () => {
-    await eventBus.publish("reader.book.completed", {
-      userId: "user-1",
-      bookId: "book-1",
-    });
+    await eventBus.publish(
+      "reader.book.completed",
+      {
+        userId: "user-1",
+        bookId: "book-1",
+      },
+      {
+        eventId: "event-read-1",
+        occurredAt: new Date().toISOString(),
+      },
+    );
 
     const [notif] = await repository.listUnreadForUser("user-1");
     expect(notif).toBeDefined();
@@ -172,10 +186,17 @@ describe("Notifications Vertical Slice & Event Flow", () => {
   });
 
   it("should enforce user isolation: user-2 cannot view or mark user-1 notifications", async () => {
-    await eventBus.publish("reader.book.completed", {
-      userId: "user-1",
-      bookId: "book-secret",
-    });
+    await eventBus.publish(
+      "reader.book.completed",
+      {
+        userId: "user-1",
+        bookId: "book-secret",
+      },
+      {
+        eventId: "event-iso-1",
+        occurredAt: new Date().toISOString(),
+      },
+    );
 
     // User 2 sees nothing
     const user2Unread = await repository.listUnreadForUser("user-2");
@@ -196,10 +217,17 @@ describe("Notifications Vertical Slice & Event Flow", () => {
     );
 
     await expect(
-      eventBus.dispatch("reader.book.completed", {
-        userId: "user-fail",
-        bookId: "book-fail",
-      }),
+      eventBus.dispatch(
+        "reader.book.completed",
+        {
+          userId: "user-fail",
+          bookId: "book-fail",
+        },
+        {
+          eventId: "event-fail-1",
+          occurredAt: new Date().toISOString(),
+        },
+      ),
     ).rejects.toThrow("Database connection lost during notification insert");
   });
 
@@ -214,7 +242,7 @@ describe("Notifications Vertical Slice & Event Flow", () => {
       },
       {
         eventId: "event-uuid-789",
-        occurredAt: "2026-10-09T00:00:00Z",
+        occurredAt: new Date().toISOString(),
       },
     );
 

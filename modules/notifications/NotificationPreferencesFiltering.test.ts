@@ -4,19 +4,19 @@ import { NotificationPreferencesRepository } from "@/modules/me/account/notifica
 import { UserId } from "@/shared/kernel/UserId";
 
 class MockEventBus {
-  private handlers: Map<string, Array<(payload: any) => Promise<void>>> = new Map();
+  private handlers: Map<string, Array<(payload: any, context?: any) => Promise<void>>> = new Map();
 
-  subscribe(eventName: string, handler: (payload: any) => Promise<void>): () => void {
+  subscribe(eventName: string, handler: (payload: any, context?: any) => Promise<void>): () => void {
     const list = this.handlers.get(eventName) || [];
     list.push(handler);
     this.handlers.set(eventName, list);
     return () => {};
   }
 
-  emit(eventName: string, payload: any): void {
+  emit(eventName: string, payload: any, context?: any): void {
     const list = this.handlers.get(eventName) || [];
     for (const handler of list) {
-      handler(payload);
+      handler(payload, context);
     }
   }
 }
@@ -114,10 +114,17 @@ describe("Notification Preferences Event Filtering Integration", () => {
     });
 
     // 3. Book Completed
-    eventBus.emit("reader.book.completed", {
-      userId,
-      bookId: "book-123",
-    });
+    eventBus.emit(
+      "reader.book.completed",
+      {
+        userId,
+        bookId: "book-123",
+      },
+      {
+        eventId: "event-pref-3",
+        occurredAt: new Date().toISOString(),
+      },
+    );
 
     // 4. Book Added
     eventBus.emit("library.book.added", {
