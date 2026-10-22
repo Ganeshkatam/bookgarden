@@ -8,6 +8,13 @@ import { SupabaseAuthorizationRepository } from "@/modules/authorization/infrast
 
 import { ServerActionResult } from "@/lib/actions/action-result";
 
+import {
+  ALLOWED_USER_STORAGE_BUCKETS,
+  STORAGE_BUCKET_LIMITS,
+  getFileHeaderBytes,
+  isAllowedImageMagicBytes,
+} from "../utils/file-validation";
+
 export async function uploadFileToStorage(
   bucket: string,
   formData: FormData,
@@ -21,12 +28,45 @@ export async function uploadFileToStorage(
       return { success: false, error: { message: "Not authenticated" } };
     }
 
+    // 1. Bucket allowlist validation (catalog buckets book-pdfs and book-covers are strictly prohibited)
+    if (!ALLOWED_USER_STORAGE_BUCKETS.includes(bucket)) {
+      return { success: false, error: { message: "Invalid or unauthorized storage bucket" } };
+    }
+
+    const limits = STORAGE_BUCKET_LIMITS[bucket];
+
     const file = formData.get("file") as File;
     if (!file || file.size === 0) {
       return { success: false, error: { message: "No file provided" } };
     }
 
-    // Sanitize filename
+    // 2. File size limit enforcement
+    if (file.size > limits.maxBytes) {
+      const maxMb = Math.round(limits.maxBytes / (1024 * 1024));
+      return {
+        success: false,
+        error: { message: `File size exceeds allowed limit of ${maxMb}MB` },
+      };
+    }
+
+    // 3. MIME type header validation
+    if (!limits.allowedMimes.includes(file.type)) {
+      return {
+        success: false,
+        error: { message: `Invalid file type. Allowed formats: ${limits.allowedMimes.join(", ")}` },
+      };
+    }
+
+    // 4. Deep magic-bytes inspection (prevents MIME spoofing / disguised executables)
+    const headerBytes = await getFileHeaderBytes(file, 16);
+    if (!isAllowedImageMagicBytes(headerBytes, limits.allowedMimes)) {
+      return {
+        success: false,
+        error: { message: "Invalid file content: signature does not match allowed image format" },
+      };
+    }
+
+    // 5. Sanitize filename and enforce user ID folder prefix
     const fileExt = file.name.split(".").pop()?.toLowerCase() || "bin";
     const baseName = file.name
       .replace(/\.[^/.]+$/, "")
@@ -37,7 +77,7 @@ export async function uploadFileToStorage(
 
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(2, 8);
-    const fileName = `${baseName}_${timestamp}_${randomStr}.${fileExt}`;
+    const fileName = `${user.id}/${baseName}_${timestamp}_${randomStr}.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
       .from(bucket)
@@ -85,7 +125,7 @@ export async function uploadFileToStorage(
   }
 }
 
-const ALLOWED_STORAGE_BUCKETS = ["avatars", "user-images", "shelves"];
+const ALLOWED_STORAGE_BUCKETS = ALLOWED_USER_STORAGE_BUCKETS;
 
 export async function deleteFileFromStorage(
   bucket: string,
@@ -188,18 +228,34 @@ export async function deleteFileFromStorage(
           }
         }
       } else if (bucket === "shelves") {
-        const shelfPrefixMatch = normalizedPath.match(/^shelf-([0-9a-fA-F-]+)\//);
-        if (shelfPrefixMatch) {
-          const shelfId = shelfPrefixMatch[1];
-          const { data: shelf } = await supabase
-            .from("shelves")
-            .select("id")
-            .eq("id", shelfId)
-            .eq("user_id", user.id)
-            .maybeSingle();
+        const pathOwnerId = normalizedPath.split("/")[0];
+        if (pathOwnerId === user.id) {
+          // User is deleting their own file under user.id/ prefix
+        } else {
+          const shelfPrefixMatch = normalizedPath.match(/^shelf-([0-9a-fA-F-]+)\//);
+          if (shelfPrefixMatch) {
+            const shelfId = shelfPrefixMatch[1];
+            const { data: shelf } = await supabase
+              .from("shelves")
+              .select("id")
+              .eq("id", shelfId)
+              .eq("user_id", user.id)
+              .maybeSingle();
 
-          if (!shelf) {
-            return { success: false, error: { message: "Forbidden: Cannot delete files for this shelf" } };
+            if (!shelf) {
+              return { success: false, error: { message: "Forbidden: Cannot delete files for this shelf" } };
+            }
+          } else {
+            const { data: permission } = await supabase
+              .from("user_permissions")
+              .select("id")
+              .eq("user_id", user.id)
+              .like("resource_url", `%${normalizedPath}%`)
+              .maybeSingle();
+
+            if (!permission) {
+              return { success: false, error: { message: "Forbidden: Cannot delete files owned by another user" } };
+            }
           }
         }
       }
