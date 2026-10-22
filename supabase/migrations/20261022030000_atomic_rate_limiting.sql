@@ -222,16 +222,17 @@ DECLARE
   v_now timestamptz := clock_timestamp();
   v_attempts integer;
   v_in_flight integer;
-  v_last_success timestamptz;
+  v_window_start timestamptz;
   v_locked_until timestamptz;
   v_lockout_interval interval := (p_lockout_seconds || ' seconds')::interval;
+  v_window_interval interval := interval '15 minutes';
 BEGIN
   IF p_key IS NULL OR length(btrim(p_key)) = 0 THEN
     RAISE EXCEPTION 'Rate limit key cannot be null or empty';
   END IF;
 
-  SELECT rl.attempts, rl.in_flight, rl.last_success_at, rl.locked_until
-  INTO v_attempts, v_in_flight, v_last_success, v_locked_until
+  SELECT rl.attempts, rl.in_flight, rl.window_started_at, rl.locked_until
+  INTO v_attempts, v_in_flight, v_window_start, v_locked_until
   FROM internal.rate_limits rl
   WHERE rl.key = p_key
   FOR UPDATE;
@@ -241,15 +242,22 @@ BEGIN
     RETURN;
   END IF;
 
-  v_in_flight := GREATEST(0, v_in_flight - 1);
-
-  -- Concurrency check: If a successful login completed after this attempt began (v_last_success > p_attempt_time),
-  -- this failure is recorded as the 1st consecutive failure after that success, NOT erased.
-  IF v_last_success IS NOT NULL AND v_last_success > p_attempt_time THEN
-    v_attempts := 1;
-  ELSE
-    v_attempts := v_attempts + 1;
+  -- 1. Lockout expiry check: if lockout has expired, reset attempt counter and start new window
+  IF v_locked_until IS NOT NULL AND v_locked_until <= v_now THEN
+    v_attempts := 0;
+    v_in_flight := 0;
+    v_window_start := v_now;
+    v_locked_until := NULL;
+  -- 2. Window expiry check: if sliding/fixed window has elapsed, reset counter
+  ELSIF v_now - v_window_start >= v_window_interval THEN
+    v_attempts := 0;
+    v_in_flight := 0;
+    v_window_start := v_now;
+    v_locked_until := NULL;
   END IF;
+
+  v_in_flight := GREATEST(0, v_in_flight - 1);
+  v_attempts := v_attempts + 1;
 
   IF v_attempts >= p_max_attempts THEN
     v_locked_until := v_now + v_lockout_interval;
@@ -259,6 +267,7 @@ BEGIN
   SET
     attempts = v_attempts,
     in_flight = v_in_flight,
+    window_started_at = v_window_start,
     locked_until = v_locked_until,
     updated_at = v_now
   WHERE key = p_key;

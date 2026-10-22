@@ -397,14 +397,7 @@ describe("loginWithPassword — Layered Atomic Rate Limiting", () => {
       lastSuccessTime = new Date("2026-10-22T10:00:02.000Z").getTime();
     });
 
-    mockRecordFailure.mockImplementation(async (_key: string, attemptTime: string) => {
-      const attemptMs = new Date(attemptTime).getTime();
-      // If a successful login occurred after attempt started:
-      if (lastSuccessTime && lastSuccessTime > attemptMs) {
-        // Must NOT erase failure: begins new consecutive count of 1
-        recordedFailures = 1;
-        return { locked: false, remaining: 4 };
-      }
+    mockRecordFailure.mockImplementation(async () => {
       recordedFailures++;
       return { locked: false, remaining: Math.max(0, 5 - recordedFailures) };
     });
@@ -436,5 +429,85 @@ describe("loginWithPassword — Layered Atomic Rate Limiting", () => {
       3600000,
     );
     expect(recordedFailures).toBe(1);
+  });
+
+  it("accurately accumulates multiple in-flight failures completing after a concurrent successful login", async () => {
+    const expectedKey = buildRateLimitKey("multi_fail_test@example.com", false);
+    let consecutiveFailures = 0;
+
+    mockConsume.mockImplementation(async (key: string) => {
+      if (key.startsWith("login:ip:")) return { allowed: true, remaining: 25 };
+      return { allowed: true, remaining: 4, attemptTime: "2026-10-22T10:00:00.000Z" };
+    });
+
+    mockReset.mockImplementation(async () => {
+      // Successful login resets consecutive failure counter to 0
+      consecutiveFailures = 0;
+    });
+
+    mockRecordFailure.mockImplementation(async () => {
+      // Each completed failure increments consecutive failure counter
+      consecutiveFailures++;
+      return {
+        locked: consecutiveFailures >= 5,
+        remaining: Math.max(0, 5 - consecutiveFailures),
+      };
+    });
+
+    let resolveReq1!: (val: any) => void;
+    let resolveReq3!: (val: any) => void;
+    const req1Promise = new Promise((resolve) => {
+      resolveReq1 = resolve;
+    });
+    const req3Promise = new Promise((resolve) => {
+      resolveReq3 = resolve;
+    });
+
+    mockSignInWithPassword.mockImplementation(async ({ password }: any) => {
+      if (password === "wrong_pass_1") {
+        return req1Promise;
+      }
+      if (password === "wrong_pass_2") {
+        return req3Promise;
+      }
+      if (password === "correct_pass") {
+        return {
+          data: { user: { id: "00000000-0000-0000-0000-000000000001" } },
+          error: null,
+        };
+      }
+      return { data: { user: null }, error: { message: "Invalid credentials" } };
+    });
+
+    // 1. Launch all three requests concurrently
+    const p1 = loginWithPassword("multi_fail_test@example.com", "wrong_pass_1", false);
+    const p2 = loginWithPassword("multi_fail_test@example.com", "correct_pass", false);
+    const p3 = loginWithPassword("multi_fail_test@example.com", "wrong_pass_2", false);
+
+    // 2. Wait for p2 (the correct password) to finish authentication and trigger reset
+    const res2 = await p2;
+    expect(res2.success).toBe(true);
+    expect(mockReset).toHaveBeenCalledWith(expectedKey);
+    expect(consecutiveFailures).toBe(0);
+
+    // 3. Now let the two in-flight failures finish AFTER the success
+    resolveReq1({
+      data: { user: null },
+      error: { message: "Invalid login credentials" },
+    });
+    const res1 = await p1;
+    expect(res1.success).toBe(false);
+    expect(consecutiveFailures).toBe(1);
+
+    resolveReq3({
+      data: { user: null },
+      error: { message: "Invalid login credentials" },
+    });
+    const res3 = await p3;
+    expect(res3.success).toBe(false);
+
+    // 4. Assert that both in-flight failures completing after the reset are counted (total = 2, not 1)
+    expect(mockRecordFailure).toHaveBeenCalledTimes(2);
+    expect(consecutiveFailures).toBe(2);
   });
 });
