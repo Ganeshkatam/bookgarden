@@ -72,11 +72,15 @@ export function ProfileEditForm({ profile, userEmail }: ProfileEditFormProps) {
 
   const handleSave = () => {
     startTransition(async () => {
-      const res = await updateProfileAction(formData);
+      const res = await updateProfileAction({
+        displayName: formData.displayName,
+        bio: formData.biography || null,
+        location: formData.location || null,
+      });
       if (res.success) {
         showSuccess("Profile updated successfully");
       } else {
-        showError(res.error || "Failed to update profile");
+        showError(res.error?.message || "Failed to update profile");
       }
     });
   };

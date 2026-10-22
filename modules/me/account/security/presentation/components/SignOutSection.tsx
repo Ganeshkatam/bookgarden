@@ -14,7 +14,7 @@ export function SignOutSection() {
       if (res.success) {
         showSuccess("Signed out of all other sessions");
       } else {
-        showError(res.error || "Failed to sign out of other sessions");
+        showError(res.error?.message || "Failed to sign out of other sessions");
       }
     });
   };

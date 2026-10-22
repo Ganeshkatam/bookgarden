@@ -1,2 +1,6 @@
 "use server";
-export async function updateProfileAction(data: any): Promise<any> { return { success: true }; }
+
+export {
+  updateProfileAction,
+  type ProfileUpdateData,
+} from "@/modules/me/account/profile/presentation/actions/profile";

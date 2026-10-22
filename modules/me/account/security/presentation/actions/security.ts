@@ -4,8 +4,83 @@ import { z } from "zod";
 import { ServerActionResult } from "@/lib/actions/action-result";
 import { createSupabaseServerClient } from "@/shared/core/database/server";
 
-export async function deleteAccountAction(data: any): Promise<any> { return { success: true }; }
-export async function signOutAllDevicesAction(data: any): Promise<any> { return { success: true }; }
+export interface DeleteAccountData {
+  userId?: string;
+  confirmationText: string;
+}
+
+export async function deleteAccountAction(
+  data: DeleteAccountData
+): Promise<ServerActionResult<void>> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: { message: "Unauthorized. Please log in." } };
+    }
+
+    if (data?.confirmationText !== "DELETE") {
+      return { success: false, error: { message: 'Please type "DELETE" to confirm' } };
+    }
+
+    if (data?.userId && data.userId !== user.id) {
+      return { success: false, error: { message: "Forbidden: Cannot delete another user's account." } };
+    }
+
+    // Cascade delete profile records
+    const { error: deleteError } = await supabase
+      .from("profiles")
+      .delete()
+      .eq("id", user.id);
+
+    if (deleteError) {
+      return { success: false, error: { message: `Failed to delete account: ${deleteError.message}` } };
+    }
+
+    // Revoke all active sessions and clear cookies
+    await supabase.auth.signOut({ scope: "global" }).catch(() => {});
+
+    return { success: true, data: undefined };
+  } catch (error: unknown) {
+    return {
+      success: false,
+      error: { message: error instanceof Error ? error.message : "Failed to delete account." },
+    };
+  }
+}
+
+export async function signOutAllDevicesAction(
+  _data?: unknown
+): Promise<ServerActionResult<void>> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: { message: "Unauthorized. Please log in." } };
+    }
+
+    const { error: signOutError } = await supabase.auth.signOut({ scope: "others" });
+
+    if (signOutError) {
+      return { success: false, error: { message: signOutError.message } };
+    }
+
+    return { success: true, data: undefined };
+  } catch (error: unknown) {
+    return {
+      success: false,
+      error: { message: error instanceof Error ? error.message : "Failed to sign out other devices." },
+    };
+  }
+}
 
 const PasswordUpdateSchema = z.object({
   password: z

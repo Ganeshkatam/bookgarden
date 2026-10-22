@@ -10,10 +10,21 @@ export async function markNotificationAsRead(
 ): Promise<ServerActionResult<void>> {
   try {
     const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: { message: "Unauthorized. Please log in." } };
+    }
+
     const { error } = await supabase
       .from("notifications")
       .update({ read: true })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("user_id", user.id);
+
     if (error) return { success: false, error: { message: error.message } };
     return { success: true, data: undefined };
   } catch (err: any) {
@@ -29,13 +40,20 @@ export async function markAllNotificationsAsRead(): Promise<
 > {
   try {
     const supabase = await createSupabaseServerClient();
-    const res = await getCurrentUser();
-    if (!true || !res)
-      return { success: false, error: { message: "Unauthorized" } };
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: { message: "Unauthorized. Please log in." } };
+    }
+
     const { error } = await supabase
       .from("notifications")
       .update({ read: true })
-      .eq("user_id", res.id);
+      .eq("user_id", user.id);
+
     if (error) return { success: false, error: { message: error.message } };
     return { success: true, data: undefined };
   } catch (err: any) {
@@ -51,10 +69,21 @@ export async function deleteNotificationAction(
 ): Promise<ServerActionResult<void>> {
   try {
     const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: { message: "Unauthorized. Please log in." } };
+    }
+
     const { error } = await supabase
       .from("notifications")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .eq("user_id", user.id);
+
     if (error) return { success: false, error: { message: error.message } };
     return { success: true, data: undefined };
   } catch (err: any) {
