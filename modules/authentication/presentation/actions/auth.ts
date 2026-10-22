@@ -497,26 +497,8 @@ export async function resendVerificationEmail(): Promise<void> {
 }
 
 export async function getMFAStatus(): Promise<{ isEnabled: boolean }> {
-  const supabase = await createSupabaseServerClient();
-
-  try {
-    const { data: levelData, error: levelError } =
-      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (levelError) throw new Error(levelError.message);
-
-    if (levelData.currentLevel === "aal2" || levelData.nextLevel === "aal2") {
-      const { data: factors } = await supabase.auth.mfa.listFactors();
-      if (
-        factors?.all?.length &&
-        factors.all.some((f) => f.status === "verified")
-      ) {
-        return { isEnabled: true };
-      }
-    }
-    return { isEnabled: false };
-  } catch (err: unknown) {
-    throw new Error(err instanceof Error ? err.message : "Operation failed");
-  }
+  // MFA is deferred from V1 scope. Always return disabled to prevent lockout states.
+  return { isEnabled: false };
 }
 
 export async function enrollMFA(): Promise<{
@@ -524,103 +506,15 @@ export async function enrollMFA(): Promise<{
   secret: string;
   uri: string;
 }> {
-  const supabase = await createSupabaseServerClient();
-
-  try {
-    const { data, error } = await supabase.auth.mfa.enroll({
-      factorType: "totp",
-    });
-    if (error) throw new Error(error.message);
-
-    // Audit log
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      const auditLogger = new PostgresAuditLogger(supabase);
-      const context = await getAuditContext(user.id);
-      await auditLogger.logAction(SecurityAction.MfaEnrolled, context, {
-        factorId: data.id,
-      });
-    }
-
-    return {
-      factorId: data.id,
-      secret: data.totp.secret,
-      uri: data.totp.uri,
-    };
-  } catch (err: unknown) {
-    throw new Error(
-      err instanceof Error ? err.message : "Failed to enroll MFA",
-    );
-  }
+  throw new Error("Multi-factor authentication is disabled in V1.");
 }
 
-export async function verifyMFA(factorId: string, code: string): Promise<void> {
-  const supabase = await createSupabaseServerClient();
-
-  try {
-    const { error } = await supabase.auth.mfa.challengeAndVerify({
-      factorId,
-      code,
-    });
-    if (error) throw new Error(error.message);
-
-    // Audit log
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      const auditLogger = new PostgresAuditLogger(supabase);
-      const context = await getAuditContext(user.id);
-      await auditLogger.logAction(SecurityAction.MfaVerified, context, {
-        factorId,
-      });
-    }
-  } catch (err: unknown) {
-    throw new Error(
-      err instanceof Error ? err.message : "Failed to verify MFA code",
-    );
-  }
+export async function verifyMFA(_factorId: string, _code: string): Promise<void> {
+  throw new Error("Multi-factor authentication is disabled in V1.");
 }
 
 export async function disableMFA(): Promise<void> {
-  const supabase = await createSupabaseServerClient();
-
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    const { data: factors } = await supabase.auth.mfa.listFactors();
-    const totpFactor = factors?.all?.find(
-      (f) => f.factor_type === "totp" && f.status === "verified",
-    );
-
-    if (totpFactor) {
-      const { error } = await supabase.auth.mfa.unenroll({
-        factorId: totpFactor.id,
-      });
-      if (error) throw new Error(error.message);
-
-      // Audit log
-      if (user) {
-        const auditLogger = new PostgresAuditLogger(supabase);
-        const context = await getAuditContext(user.id);
-        await auditLogger.logAction(SecurityAction.MfaDisabled, context, {
-          factorId: totpFactor.id,
-        });
-      }
-
-      return;
-    }
-
-    throw new Error("No active MFA factor found to disable");
-  } catch (err: unknown) {
-    throw new Error(
-      err instanceof Error ? err.message : "Failed to disable MFA",
-    );
-  }
+  throw new Error("Multi-factor authentication is disabled in V1.");
 }
 
 export async function sendPhoneOTP(phone: string): Promise<void> {

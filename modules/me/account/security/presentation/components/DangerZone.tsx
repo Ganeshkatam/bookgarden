@@ -27,7 +27,7 @@ export function DangerZone({ userId }: { userId: string }) {
         // Redirect will happen automatically if auth state changes, or we can force it
         window.location.href = "/";
       } else {
-        showError(res.error || "Failed to delete account");
+        showError(res.error?.message || "Failed to delete account");
       }
     });
   };

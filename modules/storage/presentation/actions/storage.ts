@@ -1,6 +1,10 @@
 "use server";
+import path from "path";
 import { SupabaseIdentityProvider } from "@/shared/infrastructure/identity/SupabaseIdentityProvider";
 import { createSupabaseServerClient } from "@/shared/core/database/server";
+import { Permission } from "@/shared/kernel/security/Permission";
+import { PermissionService } from "@/shared/kernel/security/PermissionService";
+import { SupabaseAuthorizationRepository } from "@/modules/authorization/infrastructure/SupabaseAuthorizationRepository";
 
 import { ServerActionResult } from "@/lib/actions/action-result";
 
@@ -81,6 +85,8 @@ export async function uploadFileToStorage(
   }
 }
 
+const ALLOWED_STORAGE_BUCKETS = ["avatars", "user-images", "shelves"];
+
 export async function deleteFileFromStorage(
   bucket: string,
   fileUrlOrPath: string,
@@ -96,6 +102,16 @@ export async function deleteFileFromStorage(
 
     if (!fileUrlOrPath) {
       return { success: true, data: undefined };
+    }
+
+    // 1. Bucket whitelist validation
+    if (!ALLOWED_STORAGE_BUCKETS.includes(bucket)) {
+      return { success: false, error: { message: "Invalid or unauthorized storage bucket" } };
+    }
+
+    // 2. Reject null bytes and malformed input
+    if (fileUrlOrPath.includes("\0")) {
+      return { success: false, error: { message: "Invalid path format" } };
     }
 
     // Extract storage object path from public URL if full URL is passed
@@ -116,16 +132,82 @@ export async function deleteFileFromStorage(
       }
     }
 
-    storagePath = decodeURIComponent(storagePath);
+    try {
+      storagePath = decodeURIComponent(storagePath);
+    } catch {
+      return { success: false, error: { message: "Invalid URL encoding in file path" } };
+    }
 
-    // Strip query parameters if any exist
+    // Strip query parameters and hash
     if (storagePath.includes("?")) {
       storagePath = storagePath.split("?")[0];
+    }
+    if (storagePath.includes("#")) {
+      storagePath = storagePath.split("#")[0];
+    }
+
+    // Normalize path POSIX-style and check for directory traversal
+    const normalizedPath = path.posix.normalize(storagePath).replace(/^(\/|\\)+/, "");
+    if (normalizedPath.startsWith("../") || normalizedPath.includes("/../")) {
+      return { success: false, error: { message: "Path traversal detected" } };
+    }
+
+    // 3. Ownership validation:
+    // Non-admin users are strictly limited to their own paths
+    const authRepo = new SupabaseAuthorizationRepository(supabase);
+    const permissionService = new PermissionService(authRepo);
+    const isAdmin = await permissionService.checkPermission(user.id, Permission.ManageUsers).catch(() => false);
+
+    if (!isAdmin) {
+      if (bucket === "user-images") {
+        const pathOwnerId = normalizedPath.split("/")[0];
+        if (pathOwnerId !== user.id) {
+          return { success: false, error: { message: "Forbidden: Cannot delete files owned by another user" } };
+        }
+      } else if (bucket === "avatars") {
+        const pathOwnerId = normalizedPath.split("/")[0];
+        if (pathOwnerId !== user.id) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("avatar_url")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          const isCurrentAvatar = profile?.avatar_url && profile.avatar_url.includes(normalizedPath);
+          if (!isCurrentAvatar) {
+            const { data: permission } = await supabase
+              .from("user_permissions")
+              .select("id")
+              .eq("user_id", user.id)
+              .like("resource_url", `%${normalizedPath}%`)
+              .maybeSingle();
+
+            if (!permission) {
+              return { success: false, error: { message: "Forbidden: Cannot delete files owned by another user" } };
+            }
+          }
+        }
+      } else if (bucket === "shelves") {
+        const shelfPrefixMatch = normalizedPath.match(/^shelf-([0-9a-fA-F-]+)\//);
+        if (shelfPrefixMatch) {
+          const shelfId = shelfPrefixMatch[1];
+          const { data: shelf } = await supabase
+            .from("shelves")
+            .select("id")
+            .eq("id", shelfId)
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (!shelf) {
+            return { success: false, error: { message: "Forbidden: Cannot delete files for this shelf" } };
+          }
+        }
+      }
     }
 
     const { error: deleteError } = await supabase.storage
       .from(bucket)
-      .remove([storagePath]);
+      .remove([normalizedPath]);
 
     if (deleteError) {
       return {
@@ -182,7 +264,8 @@ export async function checkUserPermissionAction(
 }
 
 export async function grantUserPermissionAction(
-  permissionType: string = "photo_upload"
+  permissionType: string = "photo_upload",
+  targetUserId?: string
 ): Promise<ServerActionResult<{ granted: boolean }>> {
   try {
     const supabase = await createSupabaseServerClient();
@@ -193,8 +276,19 @@ export async function grantUserPermissionAction(
       return { success: false, error: { message: "Not authenticated" } };
     }
 
+    // Require admin privilege to grant user permissions
+    const authRepo = new SupabaseAuthorizationRepository(supabase);
+    const permissionService = new PermissionService(authRepo);
+    const isAdmin = await permissionService.checkPermission(user.id, Permission.ManageUsers).catch(() => false);
+
+    if (!isAdmin) {
+      return { success: false, error: { message: "Forbidden: Admin privilege required" } };
+    }
+
+    const recipientId = targetUserId || user.id;
+
     const { error } = await supabase.from("user_permissions").insert({
-      user_id: user.id,
+      user_id: recipientId,
       permission_type: permissionType,
       granted: true,
     });
