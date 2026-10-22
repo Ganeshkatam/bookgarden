@@ -1,6 +1,9 @@
 -- Migration Rollback: 20261022040000_harden_catalog_rls_visibility_rollback.sql
--- Description: Rollback script for catalog RLS visibility hardening.
--- Scope: Restores permissive public read policies for books, book_files, search documents, and relationships.
+-- Description: Baseline rollback script for catalog RLS visibility hardening.
+-- WARNING: DO NOT EXECUTE IN PRODUCTION AS WRITTEN.
+-- This script restores legacy unrestricted public reads (USING true) which exposes draft
+-- and archived books to unauthenticated callers.
+-- For production recovery, use 20261022040000_harden_catalog_rls_visibility_security_preserving_recovery.sql.
 
 -- 1. Drop hardened policies
 DROP POLICY IF EXISTS "books_select_policy" ON public.books;

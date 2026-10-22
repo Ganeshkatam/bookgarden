@@ -73,6 +73,7 @@ VALUES (
   ARRAY['application/pdf', 'application/epub+zip']::text[]
 )
 ON CONFLICT (id) DO UPDATE SET
+  public = false,
   file_size_limit = 104857600,
   allowed_mime_types = ARRAY['application/pdf', 'application/epub+zip']::text[];
 
