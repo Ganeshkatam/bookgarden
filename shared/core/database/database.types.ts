@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
@@ -1767,6 +1767,18 @@ export type Database = {
           raw_views: number
         }[]
       }
+      check_rate_limit: {
+        Args: {
+          p_key: string
+          p_max_attempts: number
+          p_window_seconds: number
+        }
+        Returns: {
+          allowed: boolean
+          remaining: number
+          retry_after_ms: number
+        }[]
+      }
       claim_outbox_events_legacy_pub_v0: {
         Args: { limit_count: number }
         Returns: {
@@ -1795,6 +1807,48 @@ export type Database = {
         }
       }
       cleanup_expired_rate_limits: { Args: never; Returns: undefined }
+      consume_rate_limit: {
+        Args: {
+          p_key: string
+          p_lockout_seconds: number
+          p_max_attempts: number
+          p_window_seconds: number
+        }
+        Returns: {
+          allowed: boolean
+          attempt_id: string
+          attempt_time: string
+          remaining: number
+          retry_after_ms: number
+        }[]
+      }
+      consume_request_budget: {
+        Args: {
+          p_key: string
+          p_max_requests: number
+          p_window_seconds: number
+        }
+        Returns: {
+          allowed: boolean
+          remaining: number
+          retry_after_ms: number
+        }[]
+      }
+      create_notification_idempotent: {
+        Args: {
+          p_aggregate_id: string
+          p_aggregate_type: string
+          p_body: string
+          p_event_id: string
+          p_event_name: string
+          p_handler: string
+          p_metadata?: Json
+          p_title: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       execute_book_search_v1: {
         Args: {
           p_genres?: string[]
@@ -1984,6 +2038,47 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      record_analytics_book_completed_idempotent: {
+        Args: {
+          p_book_id: string
+          p_date: string
+          p_event_id: string
+          p_genre?: string
+          p_month: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      record_analytics_pages_read_idempotent: {
+        Args: {
+          p_book_id: string
+          p_date: string
+          p_event_id: string
+          p_genre?: string
+          p_month: string
+          p_pages: number
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      record_login_failure: {
+        Args: {
+          p_attempt_id?: string
+          p_key: string
+          p_lockout_seconds?: number
+          p_max_attempts?: number
+        }
+        Returns: {
+          attempts: number
+          locked: boolean
+          remaining: number
+          retry_after_ms: number
+        }[]
+      }
+      record_login_success: {
+        Args: { p_attempt_id?: string; p_key: string }
+        Returns: undefined
+      }
       refresh_category_document: {
         Args: { target_category: string }
         Returns: undefined
@@ -2001,6 +2096,11 @@ export type Database = {
         Returns: undefined
       }
       refresh_trending_searches_v1: { Args: never; Returns: undefined }
+      release_in_flight_attempt: {
+        Args: { p_attempt_id?: string; p_key: string }
+        Returns: undefined
+      }
+      reset_rate_limit: { Args: { p_key: string }; Returns: undefined }
       sanitize_account_logs: {
         Args: { target_user_id: string }
         Returns: undefined
