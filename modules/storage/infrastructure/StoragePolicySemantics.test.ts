@@ -30,7 +30,8 @@ function createPolicyEvaluator(
   const userBuckets = ["avatars", "shelves", "user-images"];
 
   function foldername(name: string): string {
-    return name.split("/")[0];
+    const parts = name.split("/");
+    return parts.length > 1 ? parts[0] : "";
   }
 
   function hasManageBooks(): boolean {
@@ -159,32 +160,19 @@ function createPolicyEvaluator(
 
         /**
          * DELETE evaluates USING only.
-         * Policy: foldername(name)[1] = auth.uid()
+         * Policy: foldername(name)[1] = auth.uid() OR (cardinality(foldername(name)) = 0 AND owner = auth.uid())
          */
-        remove: jest.fn(async (paths: string[]) => {
-          if (!user) {
-            return {
-              data: null,
-              error: { message: "Unauthorized", statusCode: "401" },
-            };
-          }
-
-          if (bucket === "book-covers" || bucket === "book-pdfs") {
-            if (!hasManageBooks()) {
+        remove: jest.fn(
+          async (paths: string[], opts?: { existingOwner?: string }) => {
+            if (!user) {
               return {
                 data: null,
-                error: {
-                  message: "Row not found or violates RLS",
-                  statusCode: "403",
-                },
+                error: { message: "Unauthorized", statusCode: "401" },
               };
             }
-            return { data: paths, error: null };
-          }
 
-          if (userBuckets.includes(bucket)) {
-            for (const p of paths) {
-              if (foldername(p) !== user.id) {
+            if (bucket === "book-covers" || bucket === "book-pdfs") {
+              if (!hasManageBooks()) {
                 return {
                   data: null,
                   error: {
@@ -193,15 +181,34 @@ function createPolicyEvaluator(
                   },
                 };
               }
+              return { data: paths, error: null };
             }
-            return { data: paths, error: null };
-          }
 
-          return {
-            data: null,
-            error: { message: "Bucket not found", statusCode: "404" },
-          };
-        }),
+            if (userBuckets.includes(bucket)) {
+              for (const p of paths) {
+                const prefix = foldername(p);
+                const isOwnPrefix = prefix === user.id;
+                const isLegacyFlatOwn =
+                  prefix === "" && opts?.existingOwner === user.id;
+                if (!isOwnPrefix && !isLegacyFlatOwn) {
+                  return {
+                    data: null,
+                    error: {
+                      message: "Row not found or violates RLS",
+                      statusCode: "403",
+                    },
+                  };
+                }
+              }
+              return { data: paths, error: null };
+            }
+
+            return {
+              data: null,
+              error: { message: "Bucket not found", statusCode: "404" },
+            };
+          },
+        ),
       }),
     },
   };
@@ -406,6 +413,28 @@ describe("Storage Policy Semantics & Cross-User Isolation", () => {
         const r = await userA.storage
           .from(bucket)
           .remove(["user-b/photo.jpg"]);
+        expect(r.error).toBeDefined();
+        expect(r.error?.statusCode).toBe("403");
+      },
+    );
+
+    it.each(["avatars", "shelves"])(
+      "allows user A to DELETE legacy un-prefixed own object on %s",
+      async (bucket) => {
+        const r = await userA.storage
+          .from(bucket)
+          .remove(["legacy_photo.jpg"], { existingOwner: "user-a" });
+        expect(r.error).toBeNull();
+        expect(r.data).toEqual(["legacy_photo.jpg"]);
+      },
+    );
+
+    it.each(["avatars", "shelves"])(
+      "rejects user A DELETE of legacy un-prefixed object owned by user B on %s",
+      async (bucket) => {
+        const r = await userA.storage
+          .from(bucket)
+          .remove(["legacy_photo.jpg"], { existingOwner: "user-b" });
         expect(r.error).toBeDefined();
         expect(r.error?.statusCode).toBe("403");
       },

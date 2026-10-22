@@ -12,38 +12,69 @@
 --            metadata can be stale for legacy objects).
 
 -- ============================================================================
--- 1. Bucket configuration: file size limits and allowed MIME types
+-- 1. Bucket configuration: ensure all buckets exist with strict limits and MIME types
 -- ============================================================================
 
-UPDATE storage.buckets
-SET
-  file_size_limit = 2097152, -- 2 MB
-  allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp']::text[]
-WHERE id = 'avatars';
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'avatars',
+  'avatars',
+  true,
+  2097152, -- 2 MB
+  ARRAY['image/jpeg', 'image/png', 'image/webp']::text[]
+)
+ON CONFLICT (id) DO UPDATE SET
+  file_size_limit = 2097152,
+  allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp']::text[];
 
-UPDATE storage.buckets
-SET
-  file_size_limit = 5242880, -- 5 MB
-  allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']::text[]
-WHERE id = 'shelves';
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'shelves',
+  'shelves',
+  true,
+  5242880, -- 5 MB
+  ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']::text[]
+)
+ON CONFLICT (id) DO UPDATE SET
+  file_size_limit = 5242880,
+  allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']::text[];
 
-UPDATE storage.buckets
-SET
-  file_size_limit = 5242880, -- 5 MB
-  allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp']::text[]
-WHERE id = 'user-images';
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'user-images',
+  'user-images',
+  true,
+  5242880, -- 5 MB
+  ARRAY['image/jpeg', 'image/png', 'image/webp']::text[]
+)
+ON CONFLICT (id) DO UPDATE SET
+  public = true,
+  file_size_limit = 5242880,
+  allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp']::text[];
 
-UPDATE storage.buckets
-SET
-  file_size_limit = 10485760, -- 10 MB
-  allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp']::text[]
-WHERE id = 'book-covers';
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'book-covers',
+  'book-covers',
+  true,
+  10485760, -- 10 MB
+  ARRAY['image/jpeg', 'image/png', 'image/webp']::text[]
+)
+ON CONFLICT (id) DO UPDATE SET
+  file_size_limit = 10485760,
+  allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp']::text[];
 
-UPDATE storage.buckets
-SET
-  file_size_limit = 104857600, -- 100 MB
-  allowed_mime_types = ARRAY['application/pdf', 'application/epub+zip']::text[]
-WHERE id = 'book-pdfs';
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'book-pdfs',
+  'book-pdfs',
+  false,
+  104857600, -- 100 MB
+  ARRAY['application/pdf', 'application/epub+zip']::text[]
+)
+ON CONFLICT (id) DO UPDATE SET
+  file_size_limit = 104857600,
+  allowed_mime_types = ARRAY['application/pdf', 'application/epub+zip']::text[];
 
 -- ============================================================================
 -- 2. Drop ALL existing permissive/insecure policies on storage.objects
@@ -54,6 +85,7 @@ WHERE id = 'book-pdfs';
 
 -- Original avatar policies (20260717, 20260902)
 DROP POLICY IF EXISTS "Anyone can upload an avatar." ON storage.objects;
+DROP POLICY IF EXISTS "Avatar images are publicly accessible." ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can update avatars" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can delete avatars" ON storage.objects;
 
@@ -129,13 +161,22 @@ WITH CHECK (
   AND (storage.foldername(name))[1] = (SELECT auth.uid())::text
 );
 
--- DELETE: path prefix only (deterministic; does not rely on mutable owner metadata).
+-- DELETE: path prefix enforced; also allows verified owners to delete legacy un-prefixed files
 CREATE POLICY "avatars_delete_own"
 ON storage.objects FOR DELETE
 TO authenticated
 USING (
   bucket_id = 'avatars'
-  AND (storage.foldername(name))[1] = (SELECT auth.uid())::text
+  AND (
+    (storage.foldername(name))[1] = (SELECT auth.uid())::text
+    OR (
+      cardinality(storage.foldername(name)) = 0
+      AND (
+        owner = (SELECT auth.uid())
+        OR owner_id = (SELECT auth.uid())::text
+      )
+    )
+  )
 );
 
 -- ---------------------------------------------------------------------------
@@ -175,7 +216,16 @@ ON storage.objects FOR DELETE
 TO authenticated
 USING (
   bucket_id = 'shelves'
-  AND (storage.foldername(name))[1] = (SELECT auth.uid())::text
+  AND (
+    (storage.foldername(name))[1] = (SELECT auth.uid())::text
+    OR (
+      cardinality(storage.foldername(name)) = 0
+      AND (
+        owner = (SELECT auth.uid())
+        OR owner_id = (SELECT auth.uid())::text
+      )
+    )
+  )
 );
 
 -- ---------------------------------------------------------------------------
