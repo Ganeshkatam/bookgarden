@@ -337,4 +337,49 @@ describe("loginWithPassword — Layered Atomic Rate Limiting", () => {
     );
     expect(rateLimitFailures).toHaveLength(5);
   });
+
+  it("handles concurrent interleaved successful and failed logins according to consecutive-failure policy", async () => {
+    const expectedKey = buildRateLimitKey("concurrent_mixed@example.com", false);
+    let attempts = 0;
+
+    mockConsume.mockImplementation(async (key: string) => {
+      if (key.startsWith("login:ip:")) return { allowed: true, remaining: 25 };
+      attempts++;
+      return { allowed: attempts <= 5, remaining: Math.max(0, 5 - attempts) };
+    });
+
+    mockReset.mockImplementation(async (key: string) => {
+      if (key === expectedKey) {
+        attempts = 0; // Reset counter on authentic owner verification
+      }
+    });
+
+    // Request 1: Wrong password (fails)
+    mockSignInWithPassword.mockResolvedValueOnce({
+      data: { user: null },
+      error: { message: "Invalid login credentials" },
+    });
+    // Request 2: Valid password (succeeds and resets)
+    mockSignInWithPassword.mockResolvedValueOnce({
+      data: { user: { id: "00000000-0000-0000-0000-000000000001" } },
+      error: null,
+    });
+    // Request 3: Wrong password (fails)
+    mockSignInWithPassword.mockResolvedValueOnce({
+      data: { user: null },
+      error: { message: "Invalid login credentials" },
+    });
+
+    const [res1, res2, res3] = await Promise.all([
+      loginWithPassword("concurrent_mixed@example.com", "wrong_1", false),
+      loginWithPassword("concurrent_mixed@example.com", "correct_pass", false),
+      loginWithPassword("concurrent_mixed@example.com", "wrong_2", false),
+    ]);
+
+    expect(res1.success).toBe(false);
+    expect(res2.success).toBe(true);
+    expect(res3.success).toBe(false);
+    expect(mockReset).toHaveBeenCalledWith(expectedKey);
+    expect(attempts).toBeLessThanOrEqual(5);
+  });
 });

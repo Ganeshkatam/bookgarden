@@ -15,8 +15,9 @@
 
 CREATE SCHEMA IF NOT EXISTS internal;
 
--- Drop legacy table if present
+-- Drop legacy objects if present
 DROP TABLE IF EXISTS public.auth_rate_limits CASCADE;
+DROP FUNCTION IF EXISTS public.cleanup_expired_rate_limits();
 
 CREATE TABLE IF NOT EXISTS internal.rate_limits (
   key text PRIMARY KEY,
@@ -229,20 +230,18 @@ $$;
 
 -- Function: cleanup_expired_rate_limits
 -- Deletes stale rate-limit entries older than 24 hours.
+DROP FUNCTION IF EXISTS internal.cleanup_expired_rate_limits();
+
 CREATE OR REPLACE FUNCTION internal.cleanup_expired_rate_limits()
-RETURNS integer
+RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
-DECLARE
-  v_deleted integer;
 BEGIN
   DELETE FROM internal.rate_limits
   WHERE updated_at < (clock_timestamp() - INTERVAL '24 hours')
     AND (locked_until IS NULL OR locked_until < clock_timestamp());
-  GET DIAGNOSTICS v_deleted = ROW_COUNT;
-  RETURN v_deleted;
 END;
 $$;
 
@@ -256,8 +255,10 @@ REVOKE ALL ON FUNCTION public.check_rate_limit(text, integer, integer) FROM PUBL
 REVOKE ALL ON FUNCTION public.reset_rate_limit(text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION internal.cleanup_expired_rate_limits() FROM PUBLIC, anon, authenticated;
 
--- Grant execution exclusively to backend service_role and workers
-GRANT EXECUTE ON FUNCTION public.consume_rate_limit(text, integer, integer, integer) TO service_role, bookgarden_worker, tomesphere_worker;
-GRANT EXECUTE ON FUNCTION public.check_rate_limit(text, integer, integer) TO service_role, bookgarden_worker, tomesphere_worker;
-GRANT EXECUTE ON FUNCTION public.reset_rate_limit(text) TO service_role, bookgarden_worker, tomesphere_worker;
+-- Grant execution of login capability functions exclusively to backend service_role
+GRANT EXECUTE ON FUNCTION public.consume_rate_limit(text, integer, integer, integer) TO service_role;
+GRANT EXECUTE ON FUNCTION public.check_rate_limit(text, integer, integer) TO service_role;
+GRANT EXECUTE ON FUNCTION public.reset_rate_limit(text) TO service_role;
+
+-- Grant execution of background cleanup function to service_role and workers
 GRANT EXECUTE ON FUNCTION internal.cleanup_expired_rate_limits() TO service_role, bookgarden_worker, tomesphere_worker;
