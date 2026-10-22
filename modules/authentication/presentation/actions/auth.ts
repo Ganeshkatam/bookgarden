@@ -1,5 +1,6 @@
 "use server";
 
+import { createHash } from "crypto";
 import { createSupabaseServerClient } from "@/shared/core/database/server";
 import { SupabaseRateLimiter } from "@/modules/security/infrastructure/SupabaseRateLimiter";
 import { PostgresAuditLogger } from "@/modules/security/infrastructure/PostgresAuditLogger";
@@ -75,6 +76,21 @@ export async function logOut(): Promise<void> {
 
 import { ServerActionResult } from "@/lib/actions/action-result";
 
+// ─── Rate Limiting Helpers ─────────────────────────────────────
+
+/**
+ * Constructs an account-specific rate-limit key.
+ * Trims whitespace and normalizes case/formatting to prevent trivial bypass.
+ * Hashes the identifier with SHA-256 to avoid persisting raw PII in database state tables.
+ */
+export function buildRateLimitKey(identifier: string, isPhone: boolean): string {
+  const normalized = isPhone
+    ? identifier.trim().replace(/[^\d+]/g, "")
+    : identifier.trim().toLowerCase();
+  const hash = createHash("sha256").update(normalized).digest("hex");
+  return `login:account:${hash}`;
+}
+
 // ─── Authentication ────────────────────────────────────────────
 
 export async function loginWithPassword(
@@ -83,17 +99,33 @@ export async function loginWithPassword(
   isPhone: boolean,
 ): Promise<ServerActionResult<void>> {
   try {
+    if (
+      !emailOrPhone ||
+      typeof emailOrPhone !== "string" ||
+      !password ||
+      typeof password !== "string"
+    ) {
+      return {
+        success: false,
+        error: { message: "Invalid credentials. Please check your email and password." },
+      };
+    }
+
     const supabase = await createSupabaseServerClient();
     const rateLimiter = new SupabaseRateLimiter(supabase);
     const auditLogger = new PostgresAuditLogger(supabase);
     const context = await getAuditContext();
 
-    const rateLimitKey = `login:${context.ipAddress}:${emailOrPhone.toLowerCase()}`;
+    const rateLimitKey = buildRateLimitKey(emailOrPhone, isPhone);
 
-    const rateCheck = await rateLimiter.check(
+    // Atomically consume attempt BEFORE invoking Supabase Auth.
+    // Under concurrency, this guarantees that requests exceeding max attempts are
+    // serialized and rejected at the database row-lock gate before hitting Supabase Auth.
+    const rateCheck = await rateLimiter.consume(
       rateLimitKey,
       MAX_LOGIN_ATTEMPTS,
       RATE_LIMIT_WINDOW_MS,
+      LOCKOUT_DURATION_MS,
     );
 
     if (!rateCheck.allowed) {
@@ -114,22 +146,16 @@ export async function loginWithPassword(
 
     const signInResult = isPhone
       ? await supabase.auth.signInWithPassword({
-          phone: emailOrPhone,
+          phone: emailOrPhone.trim(),
           password,
         })
       : await supabase.auth.signInWithPassword({
-          email: emailOrPhone,
+          email: emailOrPhone.trim().toLowerCase(),
           password,
         });
 
     if (signInResult.error) {
-      const postCheck = await rateLimiter.consume(
-        rateLimitKey,
-        MAX_LOGIN_ATTEMPTS,
-        RATE_LIMIT_WINDOW_MS,
-        LOCKOUT_DURATION_MS,
-      );
-      if (!postCheck.allowed) {
+      if (rateCheck.remaining === 0) {
         await auditLogger.logAction(SecurityAction.AccountLocked, context, {
           email: emailOrPhone,
           reason: "max_attempts_reached",
@@ -137,7 +163,7 @@ export async function loginWithPassword(
       }
       await auditLogger.logAction(SecurityAction.LoginFailed, context, {
         email: emailOrPhone,
-        remaining: postCheck.remaining,
+        remaining: rateCheck.remaining,
       });
       return {
         success: false,
@@ -148,6 +174,8 @@ export async function loginWithPassword(
     }
 
     const userId = signInResult.data.user?.id;
+    // On authentication success, reset the rate-limit failure counter so legitimate
+    // logins do not consume failure budget.
     await rateLimiter.reset(rateLimitKey);
     await auditLogger.logAction(
       SecurityAction.LoginSuccess,
