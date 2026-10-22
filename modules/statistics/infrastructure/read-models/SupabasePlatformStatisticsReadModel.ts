@@ -7,29 +7,19 @@ export class SupabasePlatformStatisticsReadModel implements PlatformStatisticsRe
 
   async getStatistics(): Promise<PlatformStatisticsDto> {
     const [booksRes, authorsRes, genresRes] = await Promise.all([
-      this.supabase.from("books").select("*", { count: "exact", head: true }),
-      this.supabase.from("books").select("author"),
-      this.supabase.from("books").select("genre"),
+      this.supabase
+        .from("books")
+        .select("*", { count: "exact", head: true })
+        .eq("is_published", true)
+        .eq("is_archived", false),
+      this.supabase.from("authors").select("*", { count: "exact", head: true }),
+      this.supabase.from("genres").select("*", { count: "exact", head: true }),
     ]);
 
-    const booksCount = booksRes.count || 0;
-
-    const authorsSet = new Set<string>();
-    (authorsRes.data || []).forEach((b: any) => {
-      if (b.author) authorsSet.add(b.author);
-    });
-    const authorsCount = authorsSet.size;
-
-    const genresSet = new Set<string>();
-    (genresRes.data || []).forEach((b: any) => {
-      if (b.genre) genresSet.add(b.genre);
-    });
-    const genresCount = genresSet.size;
-
     return {
-      booksCount,
-      authorsCount,
-      genresCount,
+      booksCount: booksRes.count ?? 0,
+      authorsCount: authorsRes.count ?? 0,
+      genresCount: genresRes.count ?? 0,
     };
   }
 }
