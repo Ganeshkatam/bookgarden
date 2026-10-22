@@ -6,18 +6,20 @@ interface RateLimitRpcRow {
   allowed: boolean;
   remaining: number;
   retry_after_ms: number | string | bigint;
+  attempt_id?: string;
   attempt_time?: string;
 }
 
 /**
- * PostgreSQL-backed atomic rate limiter.
+ * PostgreSQL-backed atomic rate limiter and request-rate budgeter.
  *
- * Backed by internal.rate_limits and atomic capability RPCs:
- * - public.consume_rate_limit: checks limits and claims an in-flight slot under row lock (FOR UPDATE)
- * - public.record_login_failure: records failure with attempt inception timestamp to prevent in-flight erase races
- * - public.record_login_success: clears consecutive failure counter on verified auth
+ * Backed by internal schema tables and atomic capability RPCs:
+ * - public.consume_request_budget: sliding/fixed request budget for IP throttling (Issue 3)
+ * - public.consume_rate_limit: claims unique attempt_id under FOR UPDATE row lock (Issue 2)
+ * - public.record_login_failure: completes specific matching attempt and records consecutive failure
+ * - public.record_login_success: completes specific matching attempt and resets consecutive failures
+ * - public.release_in_flight_attempt: safely releases specific in-flight attempt on exceptions
  * - public.check_rate_limit: read-only status check
- * - public.reset_rate_limit: alias for record_login_success
  *
  * Implements strict fail-closed semantics: if the database is unreachable
  * or returns an RPC error, requests are denied with a safe retry-after backoff.
@@ -35,6 +37,59 @@ export class SupabaseRateLimiter implements RateLimiter {
       throw new Error(
         "[SupabaseRateLimiter] Neither admin client nor fallback Supabase client is available.",
       );
+    }
+  }
+
+  /**
+   * Atomically consumes from a sliding request budget (used for IP request throttling).
+   * Returns exact remaining window duration in milliseconds when budget is exhausted.
+   */
+  async consumeBudget(
+    key: string,
+    maxRequests: number,
+    windowMs: number,
+  ): Promise<RateLimitResult> {
+    try {
+      const client = this.getClient();
+      const windowSeconds = Math.max(1, Math.ceil(windowMs / 1000));
+
+      const { data, error } = await client.rpc("consume_request_budget", {
+        p_key: key,
+        p_max_requests: maxRequests,
+        p_window_seconds: windowSeconds,
+      });
+
+      if (error) {
+        console.error("[SupabaseRateLimiter.consumeBudget] Database RPC error, failing closed:", error);
+        return {
+          allowed: false,
+          remaining: 0,
+          retryAfterMs: 60000,
+        };
+      }
+
+      const row = (Array.isArray(data) ? data[0] : data) as RateLimitRpcRow | null;
+      if (!row) {
+        console.error("[SupabaseRateLimiter.consumeBudget] No data returned from RPC, failing closed");
+        return {
+          allowed: false,
+          remaining: 0,
+          retryAfterMs: 60000,
+        };
+      }
+
+      return {
+        allowed: Boolean(row.allowed),
+        remaining: Number(row.remaining),
+        retryAfterMs: Number(row.retry_after_ms) > 0 ? Number(row.retry_after_ms) : undefined,
+      };
+    } catch (err) {
+      console.error("[SupabaseRateLimiter.consumeBudget] Unexpected exception, failing closed:", err);
+      return {
+        allowed: false,
+        remaining: 0,
+        retryAfterMs: 60000,
+      };
     }
   }
 
@@ -92,8 +147,7 @@ export class SupabaseRateLimiter implements RateLimiter {
   }
 
   /**
-   * Atomically consumes one attempt slot under exclusive row lock.
-   * Tracks in-flight load and returns attempt_time token for race-free failure recording.
+   * Atomically claims an in-flight attempt slot with a unique attemptId under exclusive row lock.
    * Fails closed if the database operation fails.
    */
   async consume(
@@ -137,6 +191,7 @@ export class SupabaseRateLimiter implements RateLimiter {
         allowed: Boolean(row.allowed),
         remaining: Number(row.remaining),
         retryAfterMs: Number(row.retry_after_ms) > 0 ? Number(row.retry_after_ms) : undefined,
+        attemptId: row.attempt_id ? String(row.attempt_id) : undefined,
         attemptTime: row.attempt_time ? String(row.attempt_time) : undefined,
       };
     } catch (err) {
@@ -150,12 +205,11 @@ export class SupabaseRateLimiter implements RateLimiter {
   }
 
   /**
-   * Records an authentication failure with attempt start time comparison.
-   * If a successful login occurred after attemptTime, the failure starts a fresh count of 1.
+   * Records an authentication failure for a specific matching attemptId.
    */
   async recordFailure(
     key: string,
-    attemptTime: string,
+    attemptId: string,
     maxAttempts: number,
     lockoutMs: number,
   ): Promise<{ locked: boolean; remaining: number; retryAfterMs?: number }> {
@@ -165,7 +219,7 @@ export class SupabaseRateLimiter implements RateLimiter {
 
       const { data, error } = await client.rpc("record_login_failure", {
         p_key: key,
-        p_attempt_time: attemptTime,
+        p_attempt_id: attemptId,
         p_max_attempts: maxAttempts,
         p_lockout_seconds: lockoutSeconds,
       });
@@ -204,13 +258,14 @@ export class SupabaseRateLimiter implements RateLimiter {
   }
 
   /**
-   * Resets the rate limit for a key upon successful authentication.
+   * Resets consecutive failures for a key upon successful authentication, completing matching attempt.
    */
-  async reset(key: string): Promise<void> {
+  async reset(key: string, attemptId?: string): Promise<void> {
     try {
       const client = this.getClient();
       const { error } = await client.rpc("record_login_success", {
         p_key: key,
+        p_attempt_id: attemptId || null,
       });
       if (error) {
         console.error("[SupabaseRateLimiter.reset] Error resetting rate limit:", error);
@@ -221,13 +276,14 @@ export class SupabaseRateLimiter implements RateLimiter {
   }
 
   /**
-   * Releases an in-flight attempt slot if an exception occurs before auth completes.
+   * Releases a specific in-flight attempt slot if an exception occurs before auth completes.
    */
-  async releaseInFlight(key: string): Promise<void> {
+  async releaseInFlight(key: string, attemptId?: string): Promise<void> {
     try {
       const client = this.getClient();
       const { error } = await client.rpc("release_in_flight_attempt", {
         p_key: key,
+        p_attempt_id: attemptId || null,
       });
       if (error) {
         console.error("[SupabaseRateLimiter.releaseInFlight] Error releasing in-flight slot:", error);

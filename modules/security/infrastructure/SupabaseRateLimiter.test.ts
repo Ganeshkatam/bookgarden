@@ -216,44 +216,120 @@ describe("SupabaseRateLimiter — Atomic Rate Limiting Specification", () => {
       });
     });
 
-    it("reset invokes record_login_success RPC to clear key upon successful login", async () => {
+    it("consume returns attemptId when provided by consume_rate_limit RPC", async () => {
+      const limiter = new SupabaseRateLimiter(mockSupabase as unknown as SupabaseClient);
+
+      mockRpc.mockResolvedValueOnce({
+        data: [
+          {
+            allowed: true,
+            remaining: 4,
+            retry_after_ms: 0,
+            attempt_time: "2026-10-22T12:00:00.000Z",
+            attempt_id: "a0000000-0000-0000-0000-000000000001",
+          },
+        ],
+        error: null,
+      });
+
+      const res = await limiter.consume("login:account:test", 5, 900000, 3600000);
+      expect(res.allowed).toBe(true);
+      expect(res.remaining).toBe(4);
+      expect(res.attemptId).toBe("a0000000-0000-0000-0000-000000000001");
+      expect(res.attemptTime).toBe("2026-10-22T12:00:00.000Z");
+    });
+
+    it("consumeBudget invokes consume_request_budget RPC and returns allowed status with remaining window", async () => {
+      const limiter = new SupabaseRateLimiter(mockSupabase as unknown as SupabaseClient);
+
+      mockRpc.mockResolvedValueOnce({
+        data: [{ allowed: true, remaining: 29, retry_after_ms: 0 }],
+        error: null,
+      });
+
+      const res = await limiter.consumeBudget("login:ip:192.168.1.1", 30, 60000);
+      expect(res.allowed).toBe(true);
+      expect(res.remaining).toBe(29);
+      expect(mockRpc).toHaveBeenCalledWith("consume_request_budget", {
+        p_key: "login:ip:192.168.1.1",
+        p_max_requests: 30,
+        p_window_seconds: 60,
+      });
+    });
+
+    it("consumeBudget returns retryAfterMs when budget is exhausted", async () => {
+      const limiter = new SupabaseRateLimiter(mockSupabase as unknown as SupabaseClient);
+
+      mockRpc.mockResolvedValueOnce({
+        data: [{ allowed: false, remaining: 0, retry_after_ms: 45000 }],
+        error: null,
+      });
+
+      const res = await limiter.consumeBudget("login:ip:192.168.1.1", 30, 60000);
+      expect(res.allowed).toBe(false);
+      expect(res.remaining).toBe(0);
+      expect(res.retryAfterMs).toBe(45000);
+    });
+
+    it("consumeBudget fails closed when RPC encounters an error", async () => {
+      const limiter = new SupabaseRateLimiter(mockSupabase as unknown as SupabaseClient);
+
+      mockRpc.mockResolvedValueOnce({
+        data: null,
+        error: { message: "database timeout" },
+      });
+
+      const res = await limiter.consumeBudget("login:ip:192.168.1.1", 30, 60000);
+      expect(res.allowed).toBe(false);
+      expect(res.remaining).toBe(0);
+      expect(res.retryAfterMs).toBe(60000);
+    });
+
+    it("reset invokes record_login_success RPC with attemptId to complete attempt and reset counter", async () => {
       const limiter = new SupabaseRateLimiter(mockSupabase as unknown as SupabaseClient);
 
       mockRpc.mockResolvedValueOnce({ data: null, error: null });
 
-      await limiter.reset("login:reset:test");
+      await limiter.reset("login:reset:test", "a0000000-0000-0000-0000-000000000001");
 
       expect(mockRpc).toHaveBeenCalledWith("record_login_success", {
         p_key: "login:reset:test",
+        p_attempt_id: "a0000000-0000-0000-0000-000000000001",
       });
     });
 
-    it("releaseInFlight invokes release_in_flight_attempt RPC to release slot", async () => {
+    it("releaseInFlight invokes release_in_flight_attempt RPC with attemptId to release slot", async () => {
       const limiter = new SupabaseRateLimiter(mockSupabase as unknown as SupabaseClient);
 
       mockRpc.mockResolvedValueOnce({ data: null, error: null });
 
-      await limiter.releaseInFlight("login:release:test");
+      await limiter.releaseInFlight("login:release:test", "a0000000-0000-0000-0000-000000000001");
 
       expect(mockRpc).toHaveBeenCalledWith("release_in_flight_attempt", {
         p_key: "login:release:test",
+        p_attempt_id: "a0000000-0000-0000-0000-000000000001",
       });
     });
 
-    it("recordFailure invokes record_login_failure RPC and returns result", async () => {
+    it("recordFailure invokes record_login_failure RPC with attemptId and returns result", async () => {
       const limiter = new SupabaseRateLimiter(mockSupabase as unknown as SupabaseClient);
-      const attemptTime = new Date().toISOString();
+      const attemptId = "a0000000-0000-0000-0000-000000000001";
 
       mockRpc.mockResolvedValueOnce({
         data: [{ locked: false, attempts: 2, remaining: 3, retry_after_ms: 0 }],
         error: null,
       });
 
-      const result = await limiter.recordFailure("login:fail:test", attemptTime, 5, 3600000);
+      const result = await limiter.recordFailure(
+        "login:fail:test",
+        attemptId,
+        5,
+        3600000,
+      );
 
       expect(mockRpc).toHaveBeenCalledWith("record_login_failure", {
         p_key: "login:fail:test",
-        p_attempt_time: attemptTime,
+        p_attempt_id: attemptId,
         p_max_attempts: 5,
         p_lockout_seconds: 3600,
       });
@@ -263,14 +339,14 @@ describe("SupabaseRateLimiter — Atomic Rate Limiting Specification", () => {
 
     it("recordFailure handles lockout and returns retryAfterMs", async () => {
       const limiter = new SupabaseRateLimiter(mockSupabase as unknown as SupabaseClient);
-      const attemptTime = new Date().toISOString();
+      const attemptId = "a0000000-0000-0000-0000-000000000001";
 
       mockRpc.mockResolvedValueOnce({
         data: [{ locked: true, attempts: 5, remaining: 0, retry_after_ms: 3600000 }],
         error: null,
       });
 
-      const result = await limiter.recordFailure("login:fail:test", attemptTime, 5, 3600000);
+      const result = await limiter.recordFailure("login:fail:test", attemptId, 5, 3600000);
 
       expect(result.locked).toBe(true);
       expect(result.remaining).toBe(0);
@@ -279,14 +355,14 @@ describe("SupabaseRateLimiter — Atomic Rate Limiting Specification", () => {
 
     it("recordFailure fails closed if RPC returns error", async () => {
       const limiter = new SupabaseRateLimiter(mockSupabase as unknown as SupabaseClient);
-      const attemptTime = new Date().toISOString();
+      const attemptId = "a0000000-0000-0000-0000-000000000001";
 
       mockRpc.mockResolvedValueOnce({
         data: null,
         error: { message: "database offline" },
       });
 
-      const result = await limiter.recordFailure("login:fail:test", attemptTime, 5, 3600000);
+      const result = await limiter.recordFailure("login:fail:test", attemptId, 5, 3600000);
 
       expect(result.locked).toBe(true);
       expect(result.remaining).toBe(0);

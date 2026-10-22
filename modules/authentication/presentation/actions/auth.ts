@@ -114,19 +114,25 @@ export async function loginWithPassword(
 
     // Layer 1: Client Network / IP Rate Limit (only enforced when a valid edge IP is present)
     // Prevents automated distributed lockout DoS on arbitrary accounts and limits credential stuffing.
+    // Throttled as a request-rate budget separate from account login-failure tracking.
     if (context.ipAddress) {
       const ipKey = buildIpRateLimitKey(context.ipAddress);
-      const ipCheck = await rateLimiter.consume(
+      const ipCheck = await rateLimiter.consumeBudget(
         ipKey,
         MAX_IP_LOGIN_ATTEMPTS,
         RATE_LIMIT_WINDOW_MS,
-        LOCKOUT_DURATION_MS,
       );
 
       if (!ipCheck.allowed) {
-        const retryMinutes = Math.ceil(
-          (ipCheck.retryAfterMs || LOCKOUT_DURATION_MS) / 60000,
+        const retrySeconds = Math.max(
+          1,
+          Math.ceil((ipCheck.retryAfterMs || RATE_LIMIT_WINDOW_MS) / 1000),
         );
+        const retryDisplay =
+          retrySeconds >= 60
+            ? `${Math.ceil(retrySeconds / 60)} minutes`
+            : `${retrySeconds} seconds`;
+
         await auditLogger.logAction(SecurityAction.AccountLocked, context, {
           email: emailOrPhone,
           reason: "ip_rate_limit_exceeded",
@@ -134,7 +140,7 @@ export async function loginWithPassword(
         return {
           success: false,
           error: {
-            message: `Too many requests from this network. Please try again in ${retryMinutes} minutes.`,
+            message: `Too many requests from this network. Please try again in ${retryDisplay}.`,
           },
         };
       }
@@ -144,6 +150,7 @@ export async function loginWithPassword(
     const rateLimitKey = buildRateLimitKey(emailOrPhone, isPhone);
 
     let inFlightClaimed = false;
+    let activeAttemptId: string | undefined = undefined;
     try {
       // Atomically consume attempt BEFORE invoking Supabase Auth.
       // Under concurrency, this guarantees that requests exceeding max attempts are
@@ -172,6 +179,7 @@ export async function loginWithPassword(
       }
 
       inFlightClaimed = true;
+      activeAttemptId = rateCheck.attemptId;
 
       const signInResult = isPhone
         ? await supabase.auth.signInWithPassword({
@@ -185,11 +193,11 @@ export async function loginWithPassword(
 
       if (signInResult.error) {
         inFlightClaimed = false;
-        // Record failure with attempt start time comparison to eliminate in-flight erase races
-        const failResult = rateCheck.attemptTime
+        // Record failure with unique attempt ID to complete the active attempt
+        const failResult = activeAttemptId
           ? await rateLimiter.recordFailure(
               rateLimitKey,
-              rateCheck.attemptTime,
+              activeAttemptId,
               MAX_LOGIN_ATTEMPTS,
               LOCKOUT_DURATION_MS,
             )
@@ -215,10 +223,9 @@ export async function loginWithPassword(
 
       inFlightClaimed = false;
       const userId = signInResult.data.user?.id;
-      // On authentication success, reset the account rate-limit failure counter so legitimate
-      // logins do not consume failure budget.
+      // On authentication success, reset the account rate-limit failure counter and complete the matching attempt
       try {
-        await rateLimiter.reset(rateLimitKey);
+        await rateLimiter.reset(rateLimitKey, activeAttemptId);
       } catch (resetError) {
         console.error("[loginWithPassword] Rate limit reset failed after successful auth:", resetError);
       }
@@ -232,7 +239,7 @@ export async function loginWithPassword(
     } catch (innerError: any) {
       if (inFlightClaimed) {
         try {
-          await rateLimiter.releaseInFlight(rateLimitKey);
+          await rateLimiter.releaseInFlight(rateLimitKey, activeAttemptId);
         } catch (releaseErr) {
           console.error("[loginWithPassword] Error releasing in-flight slot on exception:", releaseErr);
         }
