@@ -65,6 +65,7 @@ export class SupabaseRateLimiter implements RateLimiter {
           allowed: false,
           remaining: 0,
           retryAfterMs: 60000,
+          reason: "service_unavailable",
         };
       }
 
@@ -75,13 +76,16 @@ export class SupabaseRateLimiter implements RateLimiter {
           allowed: false,
           remaining: 0,
           retryAfterMs: 60000,
+          reason: "service_unavailable",
         };
       }
 
+      const allowed = Boolean(row.allowed);
       return {
-        allowed: Boolean(row.allowed),
+        allowed,
         remaining: Number(row.remaining),
         retryAfterMs: Number(row.retry_after_ms) > 0 ? Number(row.retry_after_ms) : undefined,
+        reason: allowed ? undefined : "rate_limited",
       };
     } catch (err) {
       console.error("[SupabaseRateLimiter.consumeBudget] Unexpected exception, failing closed:", err);
@@ -89,6 +93,7 @@ export class SupabaseRateLimiter implements RateLimiter {
         allowed: false,
         remaining: 0,
         retryAfterMs: 60000,
+        reason: "service_unavailable",
       };
     }
   }
@@ -118,6 +123,7 @@ export class SupabaseRateLimiter implements RateLimiter {
           allowed: false,
           remaining: 0,
           retryAfterMs: 60000,
+          reason: "service_unavailable",
         };
       }
 
@@ -128,13 +134,16 @@ export class SupabaseRateLimiter implements RateLimiter {
           allowed: false,
           remaining: 0,
           retryAfterMs: 60000,
+          reason: "service_unavailable",
         };
       }
 
+      const allowed = Boolean(row.allowed);
       return {
-        allowed: Boolean(row.allowed),
+        allowed,
         remaining: Number(row.remaining),
         retryAfterMs: Number(row.retry_after_ms) > 0 ? Number(row.retry_after_ms) : undefined,
+        reason: allowed ? undefined : "rate_limited",
       };
     } catch (err) {
       console.error("[SupabaseRateLimiter.check] Unexpected exception, failing closed:", err);
@@ -142,6 +151,7 @@ export class SupabaseRateLimiter implements RateLimiter {
         allowed: false,
         remaining: 0,
         retryAfterMs: 60000,
+        reason: "service_unavailable",
       };
     }
   }
@@ -174,6 +184,7 @@ export class SupabaseRateLimiter implements RateLimiter {
           allowed: false,
           remaining: 0,
           retryAfterMs: 60000,
+          reason: "service_unavailable",
         };
       }
 
@@ -184,15 +195,18 @@ export class SupabaseRateLimiter implements RateLimiter {
           allowed: false,
           remaining: 0,
           retryAfterMs: 60000,
+          reason: "service_unavailable",
         };
       }
 
+      const allowed = Boolean(row.allowed);
       return {
-        allowed: Boolean(row.allowed),
+        allowed,
         remaining: Number(row.remaining),
         retryAfterMs: Number(row.retry_after_ms) > 0 ? Number(row.retry_after_ms) : undefined,
         attemptId: row.attempt_id ? String(row.attempt_id) : undefined,
         attemptTime: row.attempt_time ? String(row.attempt_time) : undefined,
+        reason: allowed ? undefined : "rate_limited",
       };
     } catch (err) {
       console.error("[SupabaseRateLimiter.consume] Unexpected exception, failing closed:", err);
@@ -200,6 +214,7 @@ export class SupabaseRateLimiter implements RateLimiter {
         allowed: false,
         remaining: 0,
         retryAfterMs: 60000,
+        reason: "service_unavailable",
       };
     }
   }

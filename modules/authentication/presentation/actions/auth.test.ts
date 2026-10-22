@@ -212,6 +212,57 @@ describe("loginWithPassword — Layered Atomic Rate Limiting", () => {
     );
   });
 
+  it("returns service_unavailable message when IP budget consumption fails without logging AccountLocked", async () => {
+    mockConsumeBudget.mockImplementation(async () => ({
+      allowed: false,
+      remaining: 0,
+      retryAfterMs: 60000,
+      reason: "service_unavailable",
+    }));
+
+    const result = await loginWithPassword("user@example.com", "any_password", false);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error?.message).toBe(
+        "Authentication service temporarily unavailable. Please try again shortly.",
+      );
+    }
+    expect(mockConsume).not.toHaveBeenCalled();
+    expect(mockSignInWithPassword).not.toHaveBeenCalled();
+    // Invariant: Infrastructure failures must NOT generate false AccountLocked security events
+    expect(mockLogAction).not.toHaveBeenCalledWith(
+      SecurityAction.AccountLocked,
+      expect.anything(),
+      expect.anything(),
+    );
+  });
+
+  it("returns service_unavailable message when account rate limiting fails without logging AccountLocked", async () => {
+    mockConsume.mockImplementation(async () => ({
+      allowed: false,
+      remaining: 0,
+      retryAfterMs: 60000,
+      reason: "service_unavailable",
+    }));
+
+    const result = await loginWithPassword("user@example.com", "any_password", false);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error?.message).toBe(
+        "Authentication service temporarily unavailable. Please try again shortly.",
+      );
+    }
+    expect(mockSignInWithPassword).not.toHaveBeenCalled();
+    // Invariant: Infrastructure failures must NOT generate false AccountLocked security events
+    expect(mockLogAction).not.toHaveBeenCalledWith(
+      SecurityAction.AccountLocked,
+      expect.anything(),
+      expect.anything(),
+    );
+  });
+
   it("atomically consumes attempt before auth and records credential failure without resetting", async () => {
     const expectedKey = buildRateLimitKey("user@example.com", false);
 

@@ -166,6 +166,7 @@ describe("SupabaseRateLimiter — Atomic Rate Limiting Specification", () => {
       expect(result.allowed).toBe(false);
       expect(result.remaining).toBe(0);
       expect(result.retryAfterMs).toBe(60000);
+      expect(result.reason).toBe("service_unavailable");
     });
 
     it("fails closed on consume when database throws an exception", async () => {
@@ -177,6 +178,7 @@ describe("SupabaseRateLimiter — Atomic Rate Limiting Specification", () => {
       expect(result.allowed).toBe(false);
       expect(result.remaining).toBe(0);
       expect(result.retryAfterMs).toBe(60000);
+      expect(result.reason).toBe("service_unavailable");
     });
 
     it("fails closed on empty data return", async () => {
@@ -190,6 +192,22 @@ describe("SupabaseRateLimiter — Atomic Rate Limiting Specification", () => {
       const result = await limiter.consume("login:fail:test", 5, 900000, 3600000);
       expect(result.allowed).toBe(false);
       expect(result.remaining).toBe(0);
+      expect(result.reason).toBe("service_unavailable");
+    });
+
+    it("fails closed on consumeBudget when RPC returns an error", async () => {
+      const limiter = new SupabaseRateLimiter(mockSupabase as unknown as SupabaseClient);
+
+      mockRpc.mockResolvedValueOnce({
+        data: null,
+        error: { message: "function internal.consume_request_budget() does not exist" },
+      });
+
+      const result = await limiter.consumeBudget("login:ip:fail", 30, 60000);
+      expect(result.allowed).toBe(false);
+      expect(result.remaining).toBe(0);
+      expect(result.retryAfterMs).toBe(60000);
+      expect(result.reason).toBe("service_unavailable");
     });
   });
 

@@ -124,6 +124,15 @@ export async function loginWithPassword(
       );
 
       if (!ipCheck.allowed) {
+        if (ipCheck.reason === "service_unavailable") {
+          return {
+            success: false,
+            error: {
+              message: "Authentication service temporarily unavailable. Please try again shortly.",
+            },
+          };
+        }
+
         const retrySeconds = Math.max(
           1,
           Math.ceil((ipCheck.retryAfterMs || RATE_LIMIT_WINDOW_MS) / 1000),
@@ -163,6 +172,15 @@ export async function loginWithPassword(
       );
 
       if (!rateCheck.allowed) {
+        if (rateCheck.reason === "service_unavailable") {
+          return {
+            success: false,
+            error: {
+              message: "Authentication service temporarily unavailable. Please try again shortly.",
+            },
+          };
+        }
+
         const retryMinutes = Math.ceil(
           (rateCheck.retryAfterMs || LOCKOUT_DURATION_MS) / 60000,
         );

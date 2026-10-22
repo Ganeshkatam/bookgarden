@@ -16,6 +16,8 @@ export interface RateLimitResult {
   attemptId?: string;
   /** ISO timestamp token representing attempt inception for race-free failure tracking */
   attemptTime?: string;
+  /** Failure reason when request is blocked */
+  reason?: "rate_limited" | "service_unavailable";
 }
 
 export interface RateLimiter {
