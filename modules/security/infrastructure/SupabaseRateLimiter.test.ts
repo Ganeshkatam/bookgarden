@@ -216,15 +216,27 @@ describe("SupabaseRateLimiter — Atomic Rate Limiting Specification", () => {
       });
     });
 
-    it("reset invokes reset_rate_limit RPC to clear key upon successful login", async () => {
+    it("reset invokes record_login_success RPC to clear key upon successful login", async () => {
       const limiter = new SupabaseRateLimiter(mockSupabase as unknown as SupabaseClient);
 
       mockRpc.mockResolvedValueOnce({ data: null, error: null });
 
       await limiter.reset("login:reset:test");
 
-      expect(mockRpc).toHaveBeenCalledWith("reset_rate_limit", {
+      expect(mockRpc).toHaveBeenCalledWith("record_login_success", {
         p_key: "login:reset:test",
+      });
+    });
+
+    it("releaseInFlight invokes release_in_flight_attempt RPC to release slot", async () => {
+      const limiter = new SupabaseRateLimiter(mockSupabase as unknown as SupabaseClient);
+
+      mockRpc.mockResolvedValueOnce({ data: null, error: null });
+
+      await limiter.releaseInFlight("login:release:test");
+
+      expect(mockRpc).toHaveBeenCalledWith("release_in_flight_attempt", {
+        p_key: "login:release:test",
       });
     });
 

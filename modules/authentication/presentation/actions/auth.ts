@@ -143,86 +143,102 @@ export async function loginWithPassword(
     // Layer 2: Target Account Rate Limit
     const rateLimitKey = buildRateLimitKey(emailOrPhone, isPhone);
 
-    // Atomically consume attempt BEFORE invoking Supabase Auth.
-    // Under concurrency, this guarantees that requests exceeding max attempts are
-    // serialized and rejected at the database row-lock gate before hitting Supabase Auth.
-    const rateCheck = await rateLimiter.consume(
-      rateLimitKey,
-      MAX_LOGIN_ATTEMPTS,
-      RATE_LIMIT_WINDOW_MS,
-      LOCKOUT_DURATION_MS,
-    );
-
-    if (!rateCheck.allowed) {
-      const retryMinutes = Math.ceil(
-        (rateCheck.retryAfterMs || LOCKOUT_DURATION_MS) / 60000,
+    let inFlightClaimed = false;
+    try {
+      // Atomically consume attempt BEFORE invoking Supabase Auth.
+      // Under concurrency, this guarantees that requests exceeding max attempts are
+      // serialized and rejected at the database row-lock gate before hitting Supabase Auth.
+      const rateCheck = await rateLimiter.consume(
+        rateLimitKey,
+        MAX_LOGIN_ATTEMPTS,
+        RATE_LIMIT_WINDOW_MS,
+        LOCKOUT_DURATION_MS,
       );
-      await auditLogger.logAction(SecurityAction.AccountLocked, context, {
-        email: emailOrPhone,
-        reason: "rate_limit_exceeded",
-      });
-      return {
-        success: false,
-        error: {
-          message: `Too many login attempts. Please try again in ${retryMinutes} minutes.`,
-        },
-      };
-    }
 
-    const signInResult = isPhone
-      ? await supabase.auth.signInWithPassword({
-          phone: emailOrPhone.trim(),
-          password,
-        })
-      : await supabase.auth.signInWithPassword({
-          email: emailOrPhone.trim().toLowerCase(),
-          password,
-        });
-
-    if (signInResult.error) {
-      // Record failure with attempt start time comparison to eliminate in-flight erase races
-      const failResult = rateCheck.attemptTime
-        ? await rateLimiter.recordFailure(
-            rateLimitKey,
-            rateCheck.attemptTime,
-            MAX_LOGIN_ATTEMPTS,
-            LOCKOUT_DURATION_MS,
-          )
-        : { locked: rateCheck.remaining === 0, remaining: rateCheck.remaining };
-
-      if (failResult.locked || failResult.remaining === 0) {
+      if (!rateCheck.allowed) {
+        const retryMinutes = Math.ceil(
+          (rateCheck.retryAfterMs || LOCKOUT_DURATION_MS) / 60000,
+        );
         await auditLogger.logAction(SecurityAction.AccountLocked, context, {
           email: emailOrPhone,
-          reason: "max_attempts_reached",
+          reason: "rate_limit_exceeded",
         });
+        return {
+          success: false,
+          error: {
+            message: `Too many login attempts. Please try again in ${retryMinutes} minutes.`,
+          },
+        };
       }
-      await auditLogger.logAction(SecurityAction.LoginFailed, context, {
-        email: emailOrPhone,
-        remaining: failResult.remaining,
-      });
-      return {
-        success: false,
-        error: {
-          message: "Invalid credentials. Please check your email and password.",
-        },
-      };
-    }
 
-    const userId = signInResult.data.user?.id;
-    // On authentication success, reset the account rate-limit failure counter so legitimate
-    // logins do not consume failure budget.
-    try {
-      await rateLimiter.reset(rateLimitKey);
-    } catch (resetError) {
-      console.error("[loginWithPassword] Rate limit reset failed after successful auth:", resetError);
-    }
-    await auditLogger.logAction(
-      SecurityAction.LoginSuccess,
-      { ...context, actorId: userId || context.actorId },
-      { email: emailOrPhone },
-    );
+      inFlightClaimed = true;
 
-    return { success: true, data: undefined };
+      const signInResult = isPhone
+        ? await supabase.auth.signInWithPassword({
+            phone: emailOrPhone.trim(),
+            password,
+          })
+        : await supabase.auth.signInWithPassword({
+            email: emailOrPhone.trim().toLowerCase(),
+            password,
+          });
+
+      if (signInResult.error) {
+        inFlightClaimed = false;
+        // Record failure with attempt start time comparison to eliminate in-flight erase races
+        const failResult = rateCheck.attemptTime
+          ? await rateLimiter.recordFailure(
+              rateLimitKey,
+              rateCheck.attemptTime,
+              MAX_LOGIN_ATTEMPTS,
+              LOCKOUT_DURATION_MS,
+            )
+          : { locked: rateCheck.remaining === 0, remaining: rateCheck.remaining };
+
+        if (failResult.locked || failResult.remaining === 0) {
+          await auditLogger.logAction(SecurityAction.AccountLocked, context, {
+            email: emailOrPhone,
+            reason: "max_attempts_reached",
+          });
+        }
+        await auditLogger.logAction(SecurityAction.LoginFailed, context, {
+          email: emailOrPhone,
+          remaining: failResult.remaining,
+        });
+        return {
+          success: false,
+          error: {
+            message: "Invalid credentials. Please check your email and password.",
+          },
+        };
+      }
+
+      inFlightClaimed = false;
+      const userId = signInResult.data.user?.id;
+      // On authentication success, reset the account rate-limit failure counter so legitimate
+      // logins do not consume failure budget.
+      try {
+        await rateLimiter.reset(rateLimitKey);
+      } catch (resetError) {
+        console.error("[loginWithPassword] Rate limit reset failed after successful auth:", resetError);
+      }
+      await auditLogger.logAction(
+        SecurityAction.LoginSuccess,
+        { ...context, actorId: userId || context.actorId },
+        { email: emailOrPhone },
+      );
+
+      return { success: true, data: undefined };
+    } catch (innerError: any) {
+      if (inFlightClaimed) {
+        try {
+          await rateLimiter.releaseInFlight(rateLimitKey);
+        } catch (releaseErr) {
+          console.error("[loginWithPassword] Error releasing in-flight slot on exception:", releaseErr);
+        }
+      }
+      throw innerError;
+    }
   } catch (error: any) {
     return {
       success: false,

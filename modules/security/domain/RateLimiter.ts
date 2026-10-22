@@ -62,4 +62,9 @@ export interface RateLimiter {
    * Reset the rate limit for a key (e.g. after successful login).
    */
   reset(key: string): Promise<void>;
+
+  /**
+   * Release an in-flight attempt slot if an exception occurs before auth completes.
+   */
+  releaseInFlight(key: string): Promise<void>;
 }

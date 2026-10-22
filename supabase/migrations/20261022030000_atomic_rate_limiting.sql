@@ -256,8 +256,14 @@ BEGIN
     v_locked_until := NULL;
   END IF;
 
-  v_in_flight := GREATEST(0, v_in_flight - 1);
-  v_attempts := v_attempts + 1;
+  -- Stale attempt check: If the attempt started before the current window (e.g. from a prior expired window),
+  -- it releases the in_flight slot without incrementing attempts in the new window.
+  IF p_attempt_time IS NOT NULL AND p_attempt_time < v_window_start THEN
+    v_in_flight := GREATEST(0, v_in_flight - 1);
+  ELSE
+    v_in_flight := GREATEST(0, v_in_flight - 1);
+    v_attempts := v_attempts + 1;
+  END IF;
 
   IF v_attempts >= p_max_attempts THEN
     v_locked_until := v_now + v_lockout_interval;
@@ -346,6 +352,26 @@ BEGIN
 END;
 $$;
 
+-- Function: release_in_flight_attempt
+-- Decrements in-flight counter when an attempt encounters an infrastructure exception or cancellation
+-- before an authentication outcome can be determined, preventing slot starvation.
+CREATE OR REPLACE FUNCTION public.release_in_flight_attempt(p_key text)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF p_key IS NOT NULL AND length(btrim(p_key)) > 0 THEN
+    UPDATE internal.rate_limits
+    SET
+      in_flight = GREATEST(0, in_flight - 1),
+      updated_at = clock_timestamp()
+    WHERE key = p_key;
+  END IF;
+END;
+$$;
+
 -- Function: cleanup_expired_rate_limits
 -- Deletes stale rate-limit entries older than 24 hours.
 DROP FUNCTION IF EXISTS internal.cleanup_expired_rate_limits();
@@ -373,6 +399,7 @@ REVOKE ALL ON FUNCTION public.record_login_success(text) FROM PUBLIC, anon, auth
 REVOKE ALL ON FUNCTION public.record_login_failure(text, timestamptz, integer, integer) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.reset_rate_limit(text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.check_rate_limit(text, integer, integer) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.release_in_flight_attempt(text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION internal.cleanup_expired_rate_limits() FROM PUBLIC, anon, authenticated;
 
 -- Grant execution of login capability functions exclusively to backend service_role
@@ -381,6 +408,7 @@ GRANT EXECUTE ON FUNCTION public.record_login_success(text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.record_login_failure(text, timestamptz, integer, integer) TO service_role;
 GRANT EXECUTE ON FUNCTION public.reset_rate_limit(text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.check_rate_limit(text, integer, integer) TO service_role;
+GRANT EXECUTE ON FUNCTION public.release_in_flight_attempt(text) TO service_role;
 
 -- Grant execution of background cleanup function to service_role and background workers
 GRANT EXECUTE ON FUNCTION internal.cleanup_expired_rate_limits() TO service_role, bookgarden_worker, tomesphere_worker;

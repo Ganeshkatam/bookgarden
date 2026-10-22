@@ -34,6 +34,7 @@ let mockCheck: jest.Mock;
 let mockConsume: jest.Mock;
 let mockRecordFailure: jest.Mock;
 let mockReset: jest.Mock;
+let mockReleaseInFlight: jest.Mock;
 let mockLogAction: jest.Mock;
 
 beforeEach(() => {
@@ -57,11 +58,13 @@ beforeEach(() => {
     remaining: 4,
   }));
   mockReset = jest.fn().mockResolvedValue(undefined);
+  mockReleaseInFlight = jest.fn().mockResolvedValue(undefined);
   (SupabaseRateLimiter as unknown as jest.Mock).mockImplementation(() => ({
     check: mockCheck,
     consume: mockConsume,
     recordFailure: mockRecordFailure,
     reset: mockReset,
+    releaseInFlight: mockReleaseInFlight,
   }));
 
   mockLogAction = jest.fn();
@@ -509,5 +512,22 @@ describe("loginWithPassword — Layered Atomic Rate Limiting", () => {
     // 4. Assert that both in-flight failures completing after the reset are counted (total = 2, not 1)
     expect(mockRecordFailure).toHaveBeenCalledTimes(2);
     expect(consecutiveFailures).toBe(2);
+  });
+
+  it("releases in-flight attempt slot when authentication throws an unexpected exception", async () => {
+    const expectedKey = buildRateLimitKey("exception_user@example.com", false);
+
+    mockSignInWithPassword.mockRejectedValueOnce(new Error("Supabase Auth connection timed out"));
+
+    const result = await loginWithPassword("exception_user@example.com", "any_password", false);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error?.message).toBe("Supabase Auth connection timed out");
+    }
+    expect(mockConsume).toHaveBeenCalledTimes(2); // IP + Account
+    expect(mockReleaseInFlight).toHaveBeenCalledWith(expectedKey);
+    expect(mockRecordFailure).not.toHaveBeenCalled();
+    expect(mockReset).not.toHaveBeenCalled();
   });
 });

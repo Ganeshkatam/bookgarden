@@ -209,7 +209,7 @@ export class SupabaseRateLimiter implements RateLimiter {
   async reset(key: string): Promise<void> {
     try {
       const client = this.getClient();
-      const { error } = await client.rpc("reset_rate_limit", {
+      const { error } = await client.rpc("record_login_success", {
         p_key: key,
       });
       if (error) {
@@ -217,6 +217,23 @@ export class SupabaseRateLimiter implements RateLimiter {
       }
     } catch (err) {
       console.error("[SupabaseRateLimiter.reset] Unexpected exception resetting rate limit:", err);
+    }
+  }
+
+  /**
+   * Releases an in-flight attempt slot if an exception occurs before auth completes.
+   */
+  async releaseInFlight(key: string): Promise<void> {
+    try {
+      const client = this.getClient();
+      const { error } = await client.rpc("release_in_flight_attempt", {
+        p_key: key,
+      });
+      if (error) {
+        console.error("[SupabaseRateLimiter.releaseInFlight] Error releasing in-flight slot:", error);
+      }
+    } catch (err) {
+      console.error("[SupabaseRateLimiter.releaseInFlight] Unexpected exception releasing in-flight slot:", err);
     }
   }
 }
