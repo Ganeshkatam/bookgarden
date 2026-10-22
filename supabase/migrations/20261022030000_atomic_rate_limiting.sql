@@ -30,6 +30,9 @@ CREATE TABLE IF NOT EXISTS internal.rate_limits (
 CREATE INDEX IF NOT EXISTS idx_internal_rate_limits_updated_at
   ON internal.rate_limits (updated_at);
 
+-- Ensure schema usage
+GRANT USAGE ON SCHEMA internal TO postgres, service_role, bookgarden_worker, tomesphere_worker;
+
 -- Restrict all direct table permissions
 REVOKE ALL ON TABLE internal.rate_limits FROM PUBLIC, anon, authenticated;
 GRANT ALL ON TABLE internal.rate_limits TO postgres, service_role;
@@ -253,8 +256,8 @@ REVOKE ALL ON FUNCTION public.check_rate_limit(text, integer, integer) FROM PUBL
 REVOKE ALL ON FUNCTION public.reset_rate_limit(text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION internal.cleanup_expired_rate_limits() FROM PUBLIC, anon, authenticated;
 
--- Grant execution exclusively to backend service_role and worker
-GRANT EXECUTE ON FUNCTION public.consume_rate_limit(text, integer, integer, integer) TO service_role, bookgarden_worker;
-GRANT EXECUTE ON FUNCTION public.check_rate_limit(text, integer, integer) TO service_role, bookgarden_worker;
-GRANT EXECUTE ON FUNCTION public.reset_rate_limit(text) TO service_role, bookgarden_worker;
-GRANT EXECUTE ON FUNCTION internal.cleanup_expired_rate_limits() TO service_role, bookgarden_worker;
+-- Grant execution exclusively to backend service_role and workers
+GRANT EXECUTE ON FUNCTION public.consume_rate_limit(text, integer, integer, integer) TO service_role, bookgarden_worker, tomesphere_worker;
+GRANT EXECUTE ON FUNCTION public.check_rate_limit(text, integer, integer) TO service_role, bookgarden_worker, tomesphere_worker;
+GRANT EXECUTE ON FUNCTION public.reset_rate_limit(text) TO service_role, bookgarden_worker, tomesphere_worker;
+GRANT EXECUTE ON FUNCTION internal.cleanup_expired_rate_limits() TO service_role, bookgarden_worker, tomesphere_worker;

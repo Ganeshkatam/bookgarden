@@ -1,9 +1,13 @@
 import { loginWithPassword } from "./auth";
-import { buildRateLimitKey } from "../../services/rate-limit-key";
+import {
+  buildRateLimitKey,
+  buildIpRateLimitKey,
+  getRateLimitSecret,
+} from "../../services/rate-limit-key";
 import { SupabaseRateLimiter } from "@/modules/security/infrastructure/SupabaseRateLimiter";
 import { PostgresAuditLogger } from "@/modules/security/infrastructure/PostgresAuditLogger";
 import { SecurityAction } from "@/shared/kernel/security/SecurityAction";
-import { createHash } from "crypto";
+import { createHmac } from "crypto";
 
 // Mock dependencies
 jest.mock("next/headers", () => ({
@@ -41,8 +45,11 @@ beforeEach(() => {
   };
 
   mockCheck = jest.fn();
-  mockConsume = jest.fn();
-  mockReset = jest.fn();
+  mockConsume = jest.fn().mockImplementation(async () => ({
+    allowed: true,
+    remaining: 4,
+  }));
+  mockReset = jest.fn().mockResolvedValue(undefined);
   (SupabaseRateLimiter as unknown as jest.Mock).mockImplementation(() => ({
     check: mockCheck,
     consume: mockConsume,
@@ -55,7 +62,7 @@ beforeEach(() => {
   }));
 });
 
-describe("buildRateLimitKey — Key Construction & Privacy", () => {
+describe("buildRateLimitKey & buildIpRateLimitKey — HMAC & Privacy", () => {
   it("normalizes email by trimming whitespace and lowercasing", () => {
     const key1 = buildRateLimitKey("  User.Test@Example.COM  ", false);
     const key2 = buildRateLimitKey("user.test@example.com", false);
@@ -68,16 +75,31 @@ describe("buildRateLimitKey — Key Construction & Privacy", () => {
     expect(key1).toBe(key2);
   });
 
-  it("produces a SHA-256 hash preventing raw PII persistence", () => {
+  it("produces a server-secret HMAC-SHA256 preventing offline dictionary guessing", () => {
     const email = "secret_user@example.com";
-    const expectedHash = createHash("sha256").update(email).digest("hex");
+    const secret = getRateLimitSecret();
+    const expectedHmac = createHmac("sha256", secret).update(email).digest("hex");
     const key = buildRateLimitKey(email, false);
-    expect(key).toBe(`login:account:${expectedHash}`);
+    expect(key).toBe(`login:account:${expectedHmac}`);
     expect(key).not.toContain(email);
+  });
+
+  it("produces distinct hashes when server secret is changed (secret rotation verification)", () => {
+    const email = "rotate_test@example.com";
+    const key1 = buildRateLimitKey(email, false, "secret_version_1");
+    const key2 = buildRateLimitKey(email, false, "secret_version_2");
+    expect(key1).not.toBe(key2);
+  });
+
+  it("hashes IP addresses for layered rate-limiting key derivation", () => {
+    const ip = "192.168.1.100";
+    const key = buildIpRateLimitKey(ip);
+    expect(key).toMatch(/^login:ip:[a-f0-9]{64}$/);
+    expect(key).not.toContain(ip);
   });
 });
 
-describe("loginWithPassword — Atomic Pre-Authentication Rate Limiting", () => {
+describe("loginWithPassword — Layered Atomic Rate Limiting", () => {
   it("fails fast on empty or invalid input before touching rate limiter or auth", async () => {
     const result1 = await loginWithPassword("", "password", false);
     expect(result1.success).toBe(false);
@@ -90,11 +112,37 @@ describe("loginWithPassword — Atomic Pre-Authentication Rate Limiting", () => 
     expect(mockSignInWithPassword).not.toHaveBeenCalled();
   });
 
-  it("rejects login immediately when key is locked out without invoking Supabase Auth", async () => {
-    mockConsume.mockResolvedValueOnce({
-      allowed: false,
-      remaining: 0,
-      retryAfterMs: 1800000, // 30 minutes
+  it("rejects login at IP layer when client network limit is exceeded before touching account limiter", async () => {
+    // Layer 1 IP consume returns allowed: false
+    mockConsume.mockImplementation(async (key: string) => {
+      if (key.startsWith("login:ip:")) {
+        return { allowed: false, remaining: 0, retryAfterMs: 900000 };
+      }
+      return { allowed: true, remaining: 5 };
+    });
+
+    const result = await loginWithPassword("victim@example.com", "wrongpassword", false);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error?.message).toContain("Too many requests from this network");
+      expect(result.error?.message).toContain("15 minutes");
+    }
+    // Supabase Auth and account limiter are NOT touched
+    expect(mockSignInWithPassword).not.toHaveBeenCalled();
+    expect(mockLogAction).toHaveBeenCalledWith(
+      SecurityAction.AccountLocked,
+      expect.objectContaining({ ipAddress: "192.168.1.100" }),
+      expect.objectContaining({ reason: "ip_rate_limit_exceeded" }),
+    );
+  });
+
+  it("rejects login immediately when account key is locked out without invoking Supabase Auth", async () => {
+    mockConsume.mockImplementation(async (key: string) => {
+      if (key.startsWith("login:ip:")) {
+        return { allowed: true, remaining: 25 };
+      }
+      return { allowed: false, remaining: 0, retryAfterMs: 1800000 };
     });
 
     const result = await loginWithPassword("victim@example.com", "wrongpassword", false);
@@ -104,7 +152,6 @@ describe("loginWithPassword — Atomic Pre-Authentication Rate Limiting", () => 
       expect(result.error?.message).toContain("Too many login attempts");
       expect(result.error?.message).toContain("30 minutes");
     }
-    // Supabase Auth MUST NOT be invoked when rate check is denied
     expect(mockSignInWithPassword).not.toHaveBeenCalled();
     expect(mockLogAction).toHaveBeenCalledWith(
       SecurityAction.AccountLocked,
@@ -116,11 +163,13 @@ describe("loginWithPassword — Atomic Pre-Authentication Rate Limiting", () => 
   it("atomically consumes attempt before auth and records credential failure without resetting", async () => {
     const expectedKey = buildRateLimitKey("user@example.com", false);
 
-    // Attempt 1 allowed
-    mockConsume.mockResolvedValueOnce({
-      allowed: true,
-      remaining: 4,
+    mockConsume.mockImplementation(async (key: string) => {
+      if (key.startsWith("login:ip:")) {
+        return { allowed: true, remaining: 29 };
+      }
+      return { allowed: true, remaining: 4 };
     });
+
     mockSignInWithPassword.mockResolvedValueOnce({
       data: { user: null },
       error: { message: "Invalid login credentials" },
@@ -155,11 +204,13 @@ describe("loginWithPassword — Atomic Pre-Authentication Rate Limiting", () => 
   });
 
   it("triggers account lockout on the 5th failed attempt (remaining: 0)", async () => {
-    // 5th attempt allowed to try, but remaining drops to 0
-    mockConsume.mockResolvedValueOnce({
-      allowed: true,
-      remaining: 0,
+    mockConsume.mockImplementation(async (key: string) => {
+      if (key.startsWith("login:ip:")) {
+        return { allowed: true, remaining: 25 };
+      }
+      return { allowed: true, remaining: 0 };
     });
+
     mockSignInWithPassword.mockResolvedValueOnce({
       data: { user: null },
       error: { message: "Invalid login credentials" },
@@ -178,10 +229,13 @@ describe("loginWithPassword — Atomic Pre-Authentication Rate Limiting", () => 
   it("resets rate limiter on successful authentication so legitimate logins do not deplete failure budget", async () => {
     const expectedKey = buildRateLimitKey("valid@example.com", false);
 
-    mockConsume.mockResolvedValueOnce({
-      allowed: true,
-      remaining: 3,
+    mockConsume.mockImplementation(async (key: string) => {
+      if (key.startsWith("login:ip:")) {
+        return { allowed: true, remaining: 28 };
+      }
+      return { allowed: true, remaining: 3 };
     });
+
     mockSignInWithPassword.mockResolvedValueOnce({
       data: { user: { id: "00000000-0000-0000-0000-000000000001" } },
       error: null,
@@ -198,36 +252,52 @@ describe("loginWithPassword — Atomic Pre-Authentication Rate Limiting", () => 
     );
   });
 
+  it("remains resilient and preserves user session when post-auth rate-limit reset fails", async () => {
+    // Simulate successful authentication where database reset encounters a transient error
+    mockConsume.mockResolvedValue({ allowed: true, remaining: 3 });
+    mockSignInWithPassword.mockResolvedValueOnce({
+      data: { user: { id: "00000000-0000-0000-0000-000000000001" } },
+      error: null,
+    });
+    mockReset.mockRejectedValueOnce(new Error("Database connection dropped during reset"));
+
+    const result = await loginWithPassword("user@example.com", "correctpassword", false);
+
+    // Authentication succeeded; the action must not abort the user's session
+    expect(result.success).toBe(true);
+  });
+
   it("fails closed when rate limiter encounters a database outage", async () => {
-    // SupabaseRateLimiter returns allowed: false on DB outage
-    mockConsume.mockResolvedValueOnce({
+    mockConsume.mockImplementation(async () => ({
       allowed: false,
       remaining: 0,
       retryAfterMs: 60000,
-    });
+    }));
 
     const result = await loginWithPassword("user@example.com", "any_password", false);
 
     expect(result.success).toBe(false);
     expect(mockSignInWithPassword).not.toHaveBeenCalled();
     if (!result.success) {
-      expect(result.error?.message).toContain("Too many login attempts");
+      expect(result.error?.message).toContain("Too many requests from this network");
     }
   });
 
   it("blocks concurrent requests exceeding limit before touching Supabase Auth (10 concurrent requests test)", async () => {
     const totalRequests = 10;
-    let consumeCallCount = 0;
+    let accountConsumeCount = 0;
 
-    // Simulate atomic database limiter under concurrency:
-    // First 5 requests are permitted (allowed: true, remaining: 4, 3, 2, 1, 0)
-    // Subsequent 5 requests are rejected (allowed: false, remaining: 0, retryAfterMs: 3600000)
-    mockConsume.mockImplementation(async () => {
-      consumeCallCount++;
-      if (consumeCallCount <= 5) {
+    mockConsume.mockImplementation(async (key: string) => {
+      // IP layer permits all requests
+      if (key.startsWith("login:ip:")) {
+        return { allowed: true, remaining: 20 };
+      }
+      // Account layer simulates atomic DB limiter: first 5 permitted, next 5 rejected
+      accountConsumeCount++;
+      if (accountConsumeCount <= 5) {
         return {
           allowed: true,
-          remaining: 5 - consumeCallCount,
+          remaining: 5 - accountConsumeCount,
         };
       }
       return {
@@ -237,7 +307,6 @@ describe("loginWithPassword — Atomic Pre-Authentication Rate Limiting", () => 
       };
     });
 
-    // Supabase Auth returns invalid credentials for all that reach it
     mockSignInWithPassword.mockResolvedValue({
       data: { user: null },
       error: { message: "Invalid login credentials" },
@@ -250,8 +319,8 @@ describe("loginWithPassword — Atomic Pre-Authentication Rate Limiting", () => 
 
     const results = await Promise.all(promises);
 
-    // 1. All 10 requests must have called atomic consume
-    expect(mockConsume).toHaveBeenCalledTimes(10);
+    // 1. IP layer called 10 times, and account layer called 10 times = 20 total consume calls
+    expect(mockConsume).toHaveBeenCalledTimes(20);
 
     // 2. EXACTLY 5 requests must have been allowed to reach Supabase Auth
     expect(mockSignInWithPassword).toHaveBeenCalledTimes(5);

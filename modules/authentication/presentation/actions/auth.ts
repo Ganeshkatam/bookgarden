@@ -18,20 +18,29 @@ const LOCKOUT_DURATION_MS = parseInt(
   process.env.LOCKOUT_DURATION_MS || "3600000",
   10,
 ); // 1 hour
+const MAX_IP_LOGIN_ATTEMPTS = parseInt(
+  process.env.MAX_IP_LOGIN_ATTEMPTS || "30",
+  10,
+); // 30 attempts per client IP per window
 
 /**
  * Extract audit context from the incoming request headers.
+ * Enforces edge proxy header precedence and sanitizes input to prevent header injection.
  */
 async function getAuditContext(userId?: string) {
   const hdrs = await headers();
   const rawIp =
+    hdrs.get("cf-connecting-ip")?.trim() ||
+    hdrs.get("x-real-ip")?.trim() ||
     hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    hdrs.get("x-real-ip") ||
     null;
+
+  const sanitizedIp =
+    rawIp && /^[\da-fA-F.:]+$/.test(rawIp) ? rawIp : "127.0.0.1";
 
   return {
     actorId: userId || null,
-    ipAddress: rawIp,
+    ipAddress: sanitizedIp,
     userAgent: hdrs.get("user-agent") || null,
   };
 }
@@ -74,7 +83,7 @@ export async function logOut(): Promise<void> {
 }
 
 import { ServerActionResult } from "@/lib/actions/action-result";
-import { buildRateLimitKey } from "../../services/rate-limit-key";
+import { buildRateLimitKey, buildIpRateLimitKey } from "../../services/rate-limit-key";
 
 // ─── Authentication ────────────────────────────────────────────
 
@@ -101,6 +110,33 @@ export async function loginWithPassword(
     const auditLogger = new PostgresAuditLogger(supabase);
     const context = await getAuditContext();
 
+    // Layer 1: Client Network / IP Rate Limit
+    // Prevents automated distributed lockout DoS on arbitrary accounts and limits credential stuffing.
+    const ipKey = buildIpRateLimitKey(context.ipAddress);
+    const ipCheck = await rateLimiter.consume(
+      ipKey,
+      MAX_IP_LOGIN_ATTEMPTS,
+      RATE_LIMIT_WINDOW_MS,
+      LOCKOUT_DURATION_MS,
+    );
+
+    if (!ipCheck.allowed) {
+      const retryMinutes = Math.ceil(
+        (ipCheck.retryAfterMs || LOCKOUT_DURATION_MS) / 60000,
+      );
+      await auditLogger.logAction(SecurityAction.AccountLocked, context, {
+        email: emailOrPhone,
+        reason: "ip_rate_limit_exceeded",
+      });
+      return {
+        success: false,
+        error: {
+          message: `Too many requests from this network. Please try again in ${retryMinutes} minutes.`,
+        },
+      };
+    }
+
+    // Layer 2: Target Account Rate Limit
     const rateLimitKey = buildRateLimitKey(emailOrPhone, isPhone);
 
     // Atomically consume attempt BEFORE invoking Supabase Auth.
@@ -159,9 +195,13 @@ export async function loginWithPassword(
     }
 
     const userId = signInResult.data.user?.id;
-    // On authentication success, reset the rate-limit failure counter so legitimate
+    // On authentication success, reset the account rate-limit failure counter so legitimate
     // logins do not consume failure budget.
-    await rateLimiter.reset(rateLimitKey);
+    try {
+      await rateLimiter.reset(rateLimitKey);
+    } catch (resetError) {
+      console.error("[loginWithPassword] Rate limit reset failed after successful auth:", resetError);
+    }
     await auditLogger.logAction(
       SecurityAction.LoginSuccess,
       { ...context, actorId: userId || context.actorId },
