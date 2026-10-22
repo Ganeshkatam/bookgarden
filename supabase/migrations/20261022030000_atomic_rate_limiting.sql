@@ -262,6 +262,7 @@ DECLARE
   v_window_start timestamptz;
   v_locked_until timestamptz;
   v_attempt_window_start timestamptz;
+  v_attempt_status text;
   v_lockout_interval interval := (p_lockout_seconds || ' seconds')::interval;
   v_window_interval interval := interval '15 minutes';
 BEGIN
@@ -293,22 +294,26 @@ BEGIN
 
   -- 2. Complete specific matching attempt
   IF p_attempt_id IS NOT NULL THEN
-    SELECT a.window_started_at INTO v_attempt_window_start
+    SELECT a.window_started_at, a.status
+    INTO v_attempt_window_start, v_attempt_status
     FROM internal.rate_limit_attempts a
-    WHERE a.attempt_id = p_attempt_id AND a.status = 'in_flight'
+    WHERE a.attempt_id = p_attempt_id
     FOR UPDATE;
 
     IF FOUND THEN
-      UPDATE internal.rate_limit_attempts
-      SET status = 'failure', completed_at = v_now
-      WHERE attempt_id = p_attempt_id;
+      IF v_attempt_status = 'in_flight' THEN
+        UPDATE internal.rate_limit_attempts
+        SET status = 'failure', completed_at = v_now
+        WHERE attempt_id = p_attempt_id;
 
-      -- Only increment attempts if the attempt was initiated in the current active window
-      IF v_attempt_window_start = v_window_start THEN
-        v_attempts := v_attempts + 1;
+        -- Only increment attempts if the attempt was initiated in the current active window
+        IF v_attempt_window_start = v_window_start THEN
+          v_attempts := v_attempts + 1;
+        END IF;
       END IF;
+      -- Duplicate completion: attempt already finalized, no-op idempotency preserved
     ELSE
-      -- Attempt was not in-flight; fallback increment
+      -- Untracked attempt fallback increment
       v_attempts := v_attempts + 1;
     END IF;
   ELSE
@@ -518,10 +523,14 @@ BEGIN
   DELETE FROM internal.request_budgets
   WHERE updated_at < (clock_timestamp() - INTERVAL '24 hours');
 
-  -- Delete expired rate limits older than 24 hours
-  DELETE FROM internal.rate_limits
-  WHERE updated_at < (clock_timestamp() - INTERVAL '24 hours')
-    AND (locked_until IS NULL OR locked_until < clock_timestamp());
+  -- Delete expired rate limits older than 24 hours (only if no active in-flight attempts exist)
+  DELETE FROM internal.rate_limits rl
+  WHERE rl.updated_at < (clock_timestamp() - INTERVAL '24 hours')
+    AND (rl.locked_until IS NULL OR rl.locked_until < clock_timestamp())
+    AND NOT EXISTS (
+      SELECT 1 FROM internal.rate_limit_attempts a
+      WHERE a.key = rl.key AND a.status = 'in_flight'
+    );
 END;
 $$;
 

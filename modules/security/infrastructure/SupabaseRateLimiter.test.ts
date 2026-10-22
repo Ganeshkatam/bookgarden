@@ -368,5 +368,75 @@ describe("SupabaseRateLimiter — Atomic Rate Limiting Specification", () => {
       expect(result.remaining).toBe(0);
       expect(result.retryAfterMs).toBe(60000);
     });
+
+    it("duplicate recordFailure calls pass identical attemptId for database-level idempotency", async () => {
+      const limiter = new SupabaseRateLimiter(mockSupabase as unknown as SupabaseClient);
+      const attemptId = "a0000000-0000-0000-0000-000000000001";
+
+      mockRpc
+        .mockResolvedValueOnce({
+          data: [{ locked: false, attempts: 1, remaining: 4, retry_after_ms: 0 }],
+          error: null,
+        })
+        .mockResolvedValueOnce({
+          data: [{ locked: false, attempts: 1, remaining: 4, retry_after_ms: 0 }],
+          error: null,
+        });
+
+      const res1 = await limiter.recordFailure("login:fail:dup", attemptId, 5, 3600000);
+      const res2 = await limiter.recordFailure("login:fail:dup", attemptId, 5, 3600000);
+
+      expect(res1.remaining).toBe(4);
+      expect(res2.remaining).toBe(4);
+      expect(mockRpc).toHaveBeenCalledTimes(2);
+      expect(mockRpc).toHaveBeenNthCalledWith(1, "record_login_failure", {
+        p_key: "login:fail:dup",
+        p_attempt_id: attemptId,
+        p_max_attempts: 5,
+        p_lockout_seconds: 3600,
+      });
+      expect(mockRpc).toHaveBeenNthCalledWith(2, "record_login_failure", {
+        p_key: "login:fail:dup",
+        p_attempt_id: attemptId,
+        p_max_attempts: 5,
+        p_lockout_seconds: 3600,
+      });
+    });
+
+    it("consumeBudget handles simultaneous requests at threshold correctly", async () => {
+      const limiter = new SupabaseRateLimiter(mockSupabase as unknown as SupabaseClient);
+      let consumed = 0;
+      const budget = 3;
+
+      mockRpc.mockImplementation(async (name: string) => {
+        if (name === "consume_request_budget") {
+          consumed++;
+          if (consumed <= budget) {
+            return {
+              data: [{ allowed: true, remaining: budget - consumed, retry_after_ms: 0 }],
+              error: null,
+            };
+          } else {
+            return {
+              data: [{ allowed: false, remaining: 0, retry_after_ms: 45000 }],
+              error: null,
+            };
+          }
+        }
+        return { data: null, error: new Error("Unexpected RPC") };
+      });
+
+      const promises = Array.from({ length: 6 }).map(() =>
+        limiter.consumeBudget("login:ip:concurrent_budget", budget, 60000),
+      );
+      const results = await Promise.all(promises);
+
+      const allowed = results.filter((r) => r.allowed);
+      const throttled = results.filter((r) => !r.allowed);
+
+      expect(allowed).toHaveLength(3);
+      expect(throttled).toHaveLength(3);
+      expect(throttled[0].retryAfterMs).toBe(45000);
+    });
   });
 });
