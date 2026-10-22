@@ -1,6 +1,5 @@
 "use server";
 
-import { createHash } from "crypto";
 import { createSupabaseServerClient } from "@/shared/core/database/server";
 import { SupabaseRateLimiter } from "@/modules/security/infrastructure/SupabaseRateLimiter";
 import { PostgresAuditLogger } from "@/modules/security/infrastructure/PostgresAuditLogger";
@@ -75,21 +74,7 @@ export async function logOut(): Promise<void> {
 }
 
 import { ServerActionResult } from "@/lib/actions/action-result";
-
-// ─── Rate Limiting Helpers ─────────────────────────────────────
-
-/**
- * Constructs an account-specific rate-limit key.
- * Trims whitespace and normalizes case/formatting to prevent trivial bypass.
- * Hashes the identifier with SHA-256 to avoid persisting raw PII in database state tables.
- */
-export function buildRateLimitKey(identifier: string, isPhone: boolean): string {
-  const normalized = isPhone
-    ? identifier.trim().replace(/[^\d+]/g, "")
-    : identifier.trim().toLowerCase();
-  const hash = createHash("sha256").update(normalized).digest("hex");
-  return `login:account:${hash}`;
-}
+import { buildRateLimitKey } from "../../services/rate-limit-key";
 
 // ─── Authentication ────────────────────────────────────────────
 

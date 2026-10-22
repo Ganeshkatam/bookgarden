@@ -1,4 +1,5 @@
-import { loginWithPassword, buildRateLimitKey } from "./auth";
+import { loginWithPassword } from "./auth";
+import { buildRateLimitKey } from "../../services/rate-limit-key";
 import { SupabaseRateLimiter } from "@/modules/security/infrastructure/SupabaseRateLimiter";
 import { PostgresAuditLogger } from "@/modules/security/infrastructure/PostgresAuditLogger";
 import { SecurityAction } from "@/shared/kernel/security/SecurityAction";
