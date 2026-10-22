@@ -25,9 +25,25 @@ export interface RateLimiter {
   ): Promise<RateLimitResult>;
 
   /**
+   * Atomically consume an attempt and check whether the request is allowed.
+   * If max attempts exceeded, triggers lockout for lockoutMs.
+   */
+  consume(
+    key: string,
+    maxAttempts: number,
+    windowMs: number,
+    lockoutMs: number,
+  ): Promise<RateLimitResult>;
+
+  /**
    * Record a failed attempt for the given key.
    */
-  increment(key: string, windowMs: number): Promise<void>;
+  increment(
+    key: string,
+    windowMs: number,
+    maxAttempts?: number,
+    lockoutMs?: number,
+  ): Promise<void>;
 
   /**
    * Reset the rate limit for a key (e.g. after successful login).

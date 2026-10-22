@@ -123,14 +123,13 @@ export async function loginWithPassword(
         });
 
     if (signInResult.error) {
-      await rateLimiter.increment(rateLimitKey, RATE_LIMIT_WINDOW_MS);
-      const postCheck = await rateLimiter.check(
+      const postCheck = await rateLimiter.consume(
         rateLimitKey,
         MAX_LOGIN_ATTEMPTS,
         RATE_LIMIT_WINDOW_MS,
+        LOCKOUT_DURATION_MS,
       );
       if (!postCheck.allowed) {
-        await rateLimiter.lockout(rateLimitKey, LOCKOUT_DURATION_MS);
         await auditLogger.logAction(SecurityAction.AccountLocked, context, {
           email: emailOrPhone,
           reason: "max_attempts_reached",
