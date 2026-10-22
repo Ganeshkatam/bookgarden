@@ -85,7 +85,7 @@ export async function uploadFileToStorage(
   }
 }
 
-const ALLOWED_STORAGE_BUCKETS = ["user-images", "shelves"];
+const ALLOWED_STORAGE_BUCKETS = ["avatars", "user-images", "shelves"];
 
 export async function deleteFileFromStorage(
   bucket: string,
@@ -163,6 +163,29 @@ export async function deleteFileFromStorage(
         const pathOwnerId = normalizedPath.split("/")[0];
         if (pathOwnerId !== user.id) {
           return { success: false, error: { message: "Forbidden: Cannot delete files owned by another user" } };
+        }
+      } else if (bucket === "avatars") {
+        const pathOwnerId = normalizedPath.split("/")[0];
+        if (pathOwnerId !== user.id) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("avatar_url")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          const isCurrentAvatar = profile?.avatar_url && profile.avatar_url.includes(normalizedPath);
+          if (!isCurrentAvatar) {
+            const { data: permission } = await supabase
+              .from("user_permissions")
+              .select("id")
+              .eq("user_id", user.id)
+              .like("resource_url", `%${normalizedPath}%`)
+              .maybeSingle();
+
+            if (!permission) {
+              return { success: false, error: { message: "Forbidden: Cannot delete files owned by another user" } };
+            }
+          }
         }
       } else if (bucket === "shelves") {
         const shelfPrefixMatch = normalizedPath.match(/^shelf-([0-9a-fA-F-]+)\//);
