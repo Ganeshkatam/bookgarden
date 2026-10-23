@@ -14,14 +14,14 @@ import {
 } from "lucide-react";
 import VoiceInput from "@/modules/discovery/search/presentation/components/VoiceInput";
 import { searchBooks } from "@/modules/discovery/search/presentation/actions/search";
-import { safeStorage, STORAGE_KEYS } from "@/shared/core/storage/privacy-storage";
+import { safeStorage, STORAGE_KEYS, STORAGE_LIMITS } from "@/shared/core/storage/privacy-storage";
 
 // ─── Constants ───────────────────────────────────────────────
 const RECENT_SEARCHES_KEY = STORAGE_KEYS.RECENT_SEARCHES;
-const MAX_RECENT = parseInt(process.env.NEXT_PUBLIC_MAX_RECENT_SEARCHES!, 10);
+const MAX_RECENT = STORAGE_LIMITS.MAX_RECENT_SEARCHES;
 
 // ─── Helpers ─────────────────────────────────────────────────
-function getRecentSearches(): string[] {
+export function getRecentSearches(): string[] {
   try {
     const raw = safeStorage.getItem(RECENT_SEARCHES_KEY, "functional");
     return raw ? JSON.parse(raw) : [];
@@ -30,7 +30,7 @@ function getRecentSearches(): string[] {
   }
 }
 
-function saveRecentSearch(query: string) {
+export function saveRecentSearch(query: string) {
   if (!query.trim()) return;
   try {
     const recent = getRecentSearches().filter(

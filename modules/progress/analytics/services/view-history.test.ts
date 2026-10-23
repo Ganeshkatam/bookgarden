@@ -61,4 +61,25 @@ describe("view-history service", () => {
     clearViewHistory();
     expect(getViewHistory()).toEqual([]);
   });
+
+  it("retains a maximum of exactly 20 history entries when more than 20 items are added", () => {
+    saveCookieConsent({ essential: true, functional: true, analytics: true });
+
+    // Add 25 distinct books
+    for (let i = 1; i <= 25; i++) {
+      addToViewHistory({
+        ...mockBook,
+        id: `test-book-${i}`,
+        title: `Book Title ${i}`,
+      });
+    }
+
+    const history = getViewHistory();
+    expect(history.length).toBe(20);
+    // Most recently added book should be at the front
+    expect(history[0].book.id).toBe("test-book-25");
+    // Oldest items (1 through 5) should have been pruned
+    expect(history[19].book.id).toBe("test-book-6");
+    expect(history.find((item) => item.book.id === "test-book-1")).toBeUndefined();
+  });
 });

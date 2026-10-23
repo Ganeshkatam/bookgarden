@@ -79,6 +79,15 @@ export const STORAGE_KEYS = {
 export const COOKIE_CONSENT_STORAGE_KEY = STORAGE_KEYS.COOKIE_CONSENT;
 
 /**
+ * Canonical Application Storage Limits
+ * Fixed product specifications for client-side storage retention.
+ */
+export const STORAGE_LIMITS = {
+  MAX_HISTORY: 20,
+  MAX_RECENT_SEARCHES: 5,
+} as const;
+
+/**
  * Functional storage prefixes across the platform.
  */
 export const FUNCTIONAL_KEY_PREFIXES = [

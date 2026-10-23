@@ -1,7 +1,7 @@
 import { BookDto } from "@/modules/library/application/dto/response/BookDto";
-import { safeStorage, STORAGE_KEYS } from "@/shared/core/storage/privacy-storage";
+import { safeStorage, STORAGE_KEYS, STORAGE_LIMITS } from "@/shared/core/storage/privacy-storage";
 
-const MAX_HISTORY = parseInt(process.env.NEXT_PUBLIC_MAX_HISTORY!, 10);
+const MAX_HISTORY = STORAGE_LIMITS.MAX_HISTORY;
 const STORAGE_KEY = STORAGE_KEYS.RECENT_VIEWS;
 
 export interface ViewHistoryItem {
