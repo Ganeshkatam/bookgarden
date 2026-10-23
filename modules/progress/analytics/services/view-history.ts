@@ -21,12 +21,17 @@ export function addToViewHistory(book: BookDto): void {
     MAX_HISTORY,
   );
 
-  safeStorage.setItem(STORAGE_KEY, JSON.stringify(updated), "functional");
+  safeStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(updated),
+    "analytics",
+    { preferredStore: "localStorage" }
+  );
 }
 
 export function getViewHistory(): ViewHistoryItem[] {
   try {
-    const stored = safeStorage.getItem(STORAGE_KEY);
+    const stored = safeStorage.getItem(STORAGE_KEY, "analytics");
     if (!stored) return [];
 
     const parsed = JSON.parse(stored);

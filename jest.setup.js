@@ -46,3 +46,15 @@ jest.mock("next/cache", () => ({
 
 jest.mock("server-only", () => ({}), { virtual: true });
 
+beforeEach(() => {
+  if (typeof document !== "undefined" && document.cookie) {
+    const cookies = document.cookie.split("; ");
+    for (const c of cookies) {
+      const eqIdx = c.indexOf("=");
+      const name = eqIdx > -1 ? c.substring(0, eqIdx).trim() : c.trim();
+      if (name) {
+        document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+      }
+    }
+  }
+});

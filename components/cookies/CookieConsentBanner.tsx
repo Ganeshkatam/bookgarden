@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ShieldCheck, Cookie, Lock, Sliders } from "lucide-react";
+import { ShieldCheck, Cookie, Lock, Sliders, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,9 +18,10 @@ import {
   getStoredCookieConsent,
   saveCookieConsent,
   purgeNonEssentialStorage,
+  isPersistenceReliable,
 } from "@/shared/core/storage/privacy-storage";
 
-export { getStoredCookieConsent, saveCookieConsent, purgeNonEssentialStorage };
+export { getStoredCookieConsent, saveCookieConsent, purgeNonEssentialStorage, isPersistenceReliable };
 export type { CookiePreferences };
 
 export default function CookieConsentBanner() {
@@ -31,9 +32,11 @@ export default function CookieConsentBanner() {
   // Preference state
   const [functional, setFunctional] = useState(true);
   const [analytics, setAnalytics] = useState(true);
+  const [persistenceReliable, setPersistenceReliable] = useState(true);
 
   useEffect(() => {
     setMounted(true);
+    setPersistenceReliable(isPersistenceReliable());
     const stored = getStoredCookieConsent();
     if (!stored) {
       setShowBanner(true);
@@ -101,6 +104,15 @@ export default function CookieConsentBanner() {
               </div>
             </div>
 
+            {!persistenceReliable && (
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>
+                  Storage persistence is blocked in your browser. Preferences cannot be saved permanently and will only apply to this session.
+                </span>
+              </div>
+            )}
+
             <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1 border-t border-slate-100 dark:border-slate-800/60">
               <Link
                 href="/cookies"
@@ -166,6 +178,15 @@ export default function CookieConsentBanner() {
             </DialogHeader>
 
             <div className="space-y-3.5 max-h-[55vh] overflow-y-auto pr-1">
+              {!persistenceReliable && (
+                <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs leading-relaxed">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>
+                    Storage persistence is restricted in your browser. Any optional choices will only apply for your current session and may need to be selected again on your next visit.
+                  </span>
+                </div>
+              )}
+
               {/* Category 1: Strictly Necessary (Locked) */}
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 flex items-start justify-between gap-4">
                 <div className="space-y-1">

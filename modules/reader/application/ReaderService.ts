@@ -100,7 +100,7 @@ export class ReaderService {
       }
     }
 
-    const cached = safeStorage.getItem(this.storageKey);
+    const cached = safeStorage.getItem(this.storageKey, "functional");
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
@@ -159,7 +159,8 @@ export class ReaderService {
           percentage,
           updatedAt: Date.now(),
         }),
-        "functional"
+        "functional",
+        { preferredStore: "localStorage" }
       );
 
       this.scheduleAutoSave(anchor);

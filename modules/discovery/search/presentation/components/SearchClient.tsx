@@ -23,7 +23,7 @@ const MAX_RECENT = parseInt(process.env.NEXT_PUBLIC_MAX_RECENT_SEARCHES!, 10);
 // ─── Helpers ─────────────────────────────────────────────────
 function getRecentSearches(): string[] {
   try {
-    const raw = safeStorage.getItem(RECENT_SEARCHES_KEY);
+    const raw = safeStorage.getItem(RECENT_SEARCHES_KEY, "functional");
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -40,7 +40,8 @@ function saveRecentSearch(query: string) {
     safeStorage.setItem(
       RECENT_SEARCHES_KEY,
       JSON.stringify(recent.slice(0, MAX_RECENT)),
-      "functional"
+      "functional",
+      { preferredStore: "localStorage" }
     );
   } catch {
     /* storage unavailable */

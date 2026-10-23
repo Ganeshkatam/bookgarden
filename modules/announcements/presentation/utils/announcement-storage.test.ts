@@ -10,7 +10,7 @@ import {
   ANNOUNCEMENT_BANNER_DISMISSED_PREFIX,
 } from "./announcement-storage";
 import { AnnouncementDto } from "../../application/dto/AnnouncementDto";
-import { saveCookieConsent } from "@/shared/core/storage/privacy-storage";
+import { saveCookieConsent, deleteCookie, COOKIE_CONSENT_STORAGE_KEY } from "@/shared/core/storage/privacy-storage";
 
 describe("announcement-storage policy & persistence tests", () => {
   const mockCritical: AnnouncementDto = {
@@ -90,6 +90,7 @@ describe("announcement-storage policy & persistence tests", () => {
 
   it("strictly blocks persisting seen state when user consent has not been granted", () => {
     window.localStorage.clear();
+    deleteCookie(COOKIE_CONSENT_STORAGE_KEY);
     markAnnouncementSeen("unconsented-1");
     expect(isAnnouncementSeen("unconsented-1")).toBe(false);
     expect(window.localStorage.getItem("bookgarden_announcement_seen_unconsented-1")).toBeNull();

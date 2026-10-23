@@ -1,5 +1,5 @@
 import { AnnouncementDto } from "../../application/dto/AnnouncementDto";
-import { safeStorage } from "@/shared/core/storage/privacy-storage";
+import { safeStorage, isStorageAllowed } from "@/shared/core/storage/privacy-storage";
 
 /**
  * Storage keys:
@@ -59,7 +59,8 @@ export function isEntryEligible(announcement: AnnouncementDto): boolean {
  * Best-effort client device persistence, never authoritative for business logic.
  */
 export function isAnnouncementSeen(id: string): boolean {
-  return safeStorage.getItem(`${ANNOUNCEMENT_SEEN_STORAGE_PREFIX}${id}`) === "true";
+  if (!isStorageAllowed("functional")) return false;
+  return safeStorage.getItem(`${ANNOUNCEMENT_SEEN_STORAGE_PREFIX}${id}`, "functional") === "true";
 }
 
 /**
@@ -74,8 +75,9 @@ export function markAnnouncementSeen(id: string): void {
  * A banner is hidden if either the banner was explicitly closed OR the announcement was acknowledged.
  */
 export function isBannerDismissed(id: string): boolean {
+  if (!isStorageAllowed("functional")) return false;
   const bannerDismissed =
-    safeStorage.getItem(`${ANNOUNCEMENT_BANNER_DISMISSED_PREFIX}${id}`) === "true";
+    safeStorage.getItem(`${ANNOUNCEMENT_BANNER_DISMISSED_PREFIX}${id}`, "functional") === "true";
   const entrySeen = isAnnouncementSeen(id);
   return bannerDismissed || entrySeen;
 }

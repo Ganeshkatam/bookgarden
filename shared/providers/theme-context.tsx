@@ -53,13 +53,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    safeStorage.setItem("theme", newTheme, "functional");
+    safeStorage.setItem("theme", newTheme, "functional", { preferredStore: "cookie" });
     applyTheme(newTheme);
   };
 
-  // Load initial theme from localStorage on mount
+  // Load initial theme from cookie-first storage on mount
   useEffect(() => {
-    const savedTheme = (safeStorage.getItem("theme") as Theme | null) || "system";
+    const savedTheme = (safeStorage.getItem("theme", "functional") as Theme | null) || "system";
     setThemeState(savedTheme);
     applyTheme(savedTheme);
   }, []);
@@ -72,7 +72,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       let currentTheme: Theme = "system";
       try {
         currentTheme =
-          (localStorage.getItem("theme") as Theme | null) || "system";
+          (safeStorage.getItem("theme", "functional") as Theme | null) || "system";
       } catch (e) {
         currentTheme = "system";
       }
@@ -86,7 +86,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => media.removeEventListener("change", listener);
   }, []);
 
-  // Sync theme preferences across browser tabs
+  // Sync theme preferences across browser tabs and consent updates
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "theme") {
@@ -96,8 +96,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    const handleConsentChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ functional?: boolean }>;
+      if (customEvent.detail && !customEvent.detail.functional) {
+        // Functional consent withdrawn: revert to system theme
+        setThemeState("system");
+        applyTheme("system");
+      }
+    };
+
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    window.addEventListener("cookie-consent-updated", handleConsentChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("cookie-consent-updated", handleConsentChange);
+    };
   }, []);
 
   return (
