@@ -249,4 +249,89 @@ describe("Privacy Storage Guard & Central Storage Adapter", () => {
       expect(written).toBe(false);
     });
   });
+
+  describe("Cookie Deletion Robustness (B-09)", () => {
+    it("deletes cookies across candidate paths and domains when specific attributes are omitted", () => {
+      // Simulate setting cookie on root path
+      document.cookie = "theme=dark; path=/; samesite=lax";
+      expect(getCookie("theme")).toBe("dark");
+
+      deleteCookie("theme");
+      expect(getCookie("theme")).toBeNull();
+    });
+
+    it("purges cookies matching category prefixes even when created under custom subpaths", () => {
+      // Set functional cookies
+      document.cookie = "theme=sepia; path=/read; samesite=lax";
+      document.cookie = "bookgarden_recent_searches=query; path=/; samesite=lax";
+
+      purgeCategoryStorage("functional");
+
+      expect(getCookie("theme")).toBeNull();
+      expect(getCookie("bookgarden_recent_searches")).toBeNull();
+    });
+  });
+
+  describe("Cross-Tab Consent Synchronization (B-10)", () => {
+    it("propagates consent revocation across tabs via storage event and purges local category data", () => {
+      // Initialize with full consent and cached data in tab 2
+      saveCookieConsent({ essential: true, functional: true, analytics: true });
+      privacyStorage.setItem("theme", "dark", "functional", { preferredStore: "cookie" });
+      privacyStorage.setItem("bookgarden_reader_dwell", "45", "analytics", {
+        preferredStore: "localStorage",
+      });
+
+      expect(getCookie("theme")).toBe("dark");
+      expect(window.localStorage.getItem("bookgarden_reader_dwell")).toBe("45");
+
+      // Listen for local custom event dispatch
+      const consentListener = jest.fn();
+      window.addEventListener("cookie-consent-updated", consentListener);
+
+      // Simulate Tab 1 updating consent to revoke functional and analytics
+      const updatedPrefs = {
+        essential: true,
+        functional: false,
+        analytics: false,
+        consentTimestamp: new Date().toISOString(),
+      };
+
+      const storageEvent = new StorageEvent("storage", {
+        key: COOKIE_CONSENT_STORAGE_KEY,
+        newValue: JSON.stringify(updatedPrefs),
+        oldValue: JSON.stringify({ essential: true, functional: true, analytics: true }),
+      });
+
+      window.dispatchEvent(storageEvent);
+
+      // Verify that tab 2 received the update, purged functional and analytics data
+      expect(getCookie("theme")).toBeNull();
+      expect(window.localStorage.getItem("bookgarden_reader_dwell")).toBeNull();
+      expect(consentListener).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: expect.objectContaining({
+            functional: false,
+            analytics: false,
+          }),
+        })
+      );
+
+      window.removeEventListener("cookie-consent-updated", consentListener);
+    });
+
+    it("purges all non-essential storage when consent is cleared in another tab", () => {
+      saveCookieConsent({ essential: true, functional: true, analytics: true });
+      privacyStorage.setItem("theme", "dark", "functional", { preferredStore: "cookie" });
+
+      const clearEvent = new StorageEvent("storage", {
+        key: COOKIE_CONSENT_STORAGE_KEY,
+        newValue: null,
+      });
+
+      window.dispatchEvent(clearEvent);
+
+      expect(getCookie("theme")).toBeNull();
+    });
+  });
 });
+

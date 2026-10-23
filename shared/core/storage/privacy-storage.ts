@@ -248,18 +248,67 @@ export function setCookie(name: string, value: string, options: StorageOptions =
   }
 }
 
+function getCandidatePaths(specifiedPath?: string): string[] {
+  if (specifiedPath !== undefined) return [specifiedPath];
+  const paths = new Set<string>(["/", ""]);
+  if (typeof location !== "undefined" && location.pathname) {
+    const pathname = location.pathname;
+    paths.add(pathname);
+    const segments = pathname.split("/").filter(Boolean);
+    let current = "";
+    for (const segment of segments) {
+      current += `/${segment}`;
+      paths.add(current);
+      paths.add(`${current}/`);
+    }
+  }
+  return Array.from(paths);
+}
+
+function getCandidateDomains(specifiedDomain?: string): (string | undefined)[] {
+  if (specifiedDomain !== undefined) return [specifiedDomain];
+  const domains: (string | undefined)[] = [undefined];
+  if (typeof location !== "undefined" && location.hostname) {
+    const host = location.hostname;
+    domains.push(host);
+    domains.push(`.${host}`);
+    const parts = host.split(".");
+    if (parts.length > 2) {
+      const rootDomain = parts.slice(-2).join(".");
+      domains.push(rootDomain);
+      domains.push(`.${rootDomain}`);
+    }
+  }
+  return domains;
+}
+
 /**
  * Deletes a cookie matching the given name and attributes.
+ * If path or domain are omitted, attempts deletion across candidate path and domain permutations
+ * to ensure subpath and domain-scoped cookies are thoroughly cleared.
  */
-export function deleteCookie(name: string, options: { path?: string; domain?: string } = {}): void {
+export function deleteCookie(
+  name: string,
+  options: { path?: string; domain?: string } = {}
+): void {
   if (typeof document === "undefined") return;
   try {
-    const { path = "/", domain } = options;
-    let cookieStr = `${encodeURIComponent(name)}=; path=${path}; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax`;
-    if (domain) {
-      cookieStr += `; domain=${domain}`;
+    const paths = getCandidatePaths(options.path);
+    const domains = getCandidateDomains(options.domain);
+    const secure = typeof location !== "undefined" && location.protocol === "https:";
+
+    for (const path of paths) {
+      for (const domain of domains) {
+        let cookieStr = `${encodeURIComponent(name)}=; path=${path}; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax`;
+        if (domain) {
+          cookieStr += `; domain=${domain}`;
+        }
+        if (secure) {
+          cookieStr += "; secure";
+        }
+        document.cookie = cookieStr;
+      }
     }
-    document.cookie = cookieStr;
   } catch {}
 }
 
@@ -355,7 +404,7 @@ export function purgeCategoryStorage(category: "functional" | "analytics"): void
             (p) => name === p || name.startsWith(p)
           );
           if (matches) {
-            deleteCookie(name, { path: "/" });
+            deleteCookie(name);
           }
         }
       }
@@ -395,6 +444,61 @@ export function purgeCategoryStorage(category: "functional" | "analytics"): void
 export function purgeNonEssentialStorage(): void {
   purgeCategoryStorage("functional");
   purgeCategoryStorage("analytics");
+}
+
+let isCrossTabSyncInitialized = false;
+
+/**
+ * Handles incoming storage events from other browser tabs/windows.
+ * When consent is updated or withdrawn in another tab, this handler ensures the local
+ * tab immediately purges revoked categories and notifies local components.
+ */
+export function handleCrossTabStorageChange(event: StorageEvent): void {
+  if (event.key !== COOKIE_CONSENT_STORAGE_KEY) return;
+
+  if (!event.newValue) {
+    // Consent was deleted or reset in another tab
+    purgeNonEssentialStorage();
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("cookie-consent-updated", { detail: null })
+      );
+    }
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(event.newValue);
+    if (isValidConsent(parsed)) {
+      if (!parsed.functional) {
+        purgeCategoryStorage("functional");
+      }
+      if (!parsed.analytics) {
+        purgeCategoryStorage("analytics");
+      }
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("cookie-consent-updated", { detail: parsed })
+        );
+      }
+    }
+  } catch {
+    // Ignore invalid JSON payloads from storage event
+  }
+}
+
+/**
+ * Initializes cross-tab cookie consent synchronization via window storage events.
+ */
+export function initCrossTabConsentSync(): void {
+  if (typeof window === "undefined" || isCrossTabSyncInitialized) return;
+  window.addEventListener("storage", handleCrossTabStorageChange);
+  isCrossTabSyncInitialized = true;
+}
+
+// Auto-initialize when executing in the browser
+if (typeof window !== "undefined") {
+  initCrossTabConsentSync();
 }
 
 /**
