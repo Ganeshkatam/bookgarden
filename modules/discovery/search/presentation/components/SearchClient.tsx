@@ -14,10 +14,10 @@ import {
 } from "lucide-react";
 import VoiceInput from "@/modules/discovery/search/presentation/components/VoiceInput";
 import { searchBooks } from "@/modules/discovery/search/presentation/actions/search";
-import { safeStorage } from "@/shared/core/storage/privacy-storage";
+import { safeStorage, STORAGE_KEYS } from "@/shared/core/storage/privacy-storage";
 
 // ─── Constants ───────────────────────────────────────────────
-const RECENT_SEARCHES_KEY = process.env.NEXT_PUBLIC_RECENT_SEARCHES_KEY!;
+const RECENT_SEARCHES_KEY = STORAGE_KEYS.RECENT_SEARCHES;
 const MAX_RECENT = parseInt(process.env.NEXT_PUBLIC_MAX_RECENT_SEARCHES!, 10);
 
 // ─── Helpers ─────────────────────────────────────────────────

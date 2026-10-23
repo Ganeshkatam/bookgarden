@@ -15,7 +15,7 @@ import {
   Zap,
 } from "lucide-react";
 
-import { safeStorage } from "@/shared/core/storage/privacy-storage";
+import { safeStorage, STORAGE_KEYS } from "@/shared/core/storage/privacy-storage";
 
 interface TourStep {
   title: string;
@@ -24,8 +24,8 @@ interface TourStep {
   tips?: string[];
 }
 
-const WELCOME_TOUR_COMPLETED_KEY = process.env.NEXT_PUBLIC_WELCOME_TOUR_COMPLETED_KEY!;
-const WELCOME_TOUR_SKIPPED_KEY = process.env.NEXT_PUBLIC_WELCOME_TOUR_SKIPPED_KEY!;
+const WELCOME_TOUR_COMPLETED_KEY = STORAGE_KEYS.WELCOME_TOUR_COMPLETED;
+const WELCOME_TOUR_SKIPPED_KEY = STORAGE_KEYS.WELCOME_TOUR_SKIPPED;
 
 interface WelcomeTourProps {
   isOpen: boolean;

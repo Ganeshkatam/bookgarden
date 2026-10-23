@@ -46,31 +46,65 @@ export interface StorageResult {
   reason: PersistenceReason;
 }
 
-export const COOKIE_CONSENT_STORAGE_KEY = "bookgarden_cookie_consent";
+/**
+ * Canonical Application Storage & Cookie Keys
+ * Centrally defined typed constants; never sourced from environment variables.
+ */
+export const STORAGE_KEYS = {
+  // Essential (Cookie & LocalStorage fallback)
+  COOKIE_CONSENT: "bookgarden_cookie_consent",
+
+  // Functional (Preferences, Reader Cache, UI State)
+  THEME: "theme",
+  THEME_LEGACY: "bookgarden-theme",
+  RECENT_SEARCHES: "bookgarden_recent_searches",
+  TOUR_COMPLETED: "bookgarden_tour_completed",
+  WELCOME_TOUR_COMPLETED: "tour-completed",
+  WELCOME_TOUR_SKIPPED: "tour-skipped",
+
+  // Analytics (View History & Telemetry)
+  RECENT_VIEWS: "bookgarden_recent_views",
+  VIEW_HISTORY_LEGACY: "bookgarden_view_history",
+  READER_DWELL: "bookgarden_reader_dwell",
+
+  // Prefixes
+  READER_POS_PREFIX: "bookgarden_reader_pos_",
+  READING_POS_PREFIX: "bookgarden_reading_pos_",
+  READING_PROGRESS_PREFIX: "bookgarden_reading_progress_",
+  ANNOUNCEMENT_SEEN_PREFIX: "bookgarden_announcement_seen_",
+  ANNOUNCEMENT_BANNER_DISMISSED_PREFIX: "bookgarden_announcement_banner_dismissed_",
+  TOP_BANNER_DISMISSED_PREFIX: "bookgarden_top_banner_dismissed_",
+} as const;
+
+export const COOKIE_CONSENT_STORAGE_KEY = STORAGE_KEYS.COOKIE_CONSENT;
 
 /**
  * Functional storage prefixes across the platform.
  */
 export const FUNCTIONAL_KEY_PREFIXES = [
-  "bookgarden_recent_searches",
-  "bookgarden_reader_pos_",
-  "bookgarden_reading_pos_",
-  "bookgarden_reading_progress_",
-  "bookgarden_announcement_seen_",
-  "bookgarden_announcement_banner_dismissed_",
-  "bookgarden_top_banner_dismissed_",
+  STORAGE_KEYS.RECENT_SEARCHES,
+  STORAGE_KEYS.READER_POS_PREFIX,
+  STORAGE_KEYS.READING_POS_PREFIX,
+  STORAGE_KEYS.READING_PROGRESS_PREFIX,
+  STORAGE_KEYS.ANNOUNCEMENT_SEEN_PREFIX,
+  STORAGE_KEYS.ANNOUNCEMENT_BANNER_DISMISSED_PREFIX,
+  STORAGE_KEYS.TOP_BANNER_DISMISSED_PREFIX,
+  STORAGE_KEYS.TOUR_COMPLETED,
+  STORAGE_KEYS.WELCOME_TOUR_COMPLETED,
+  STORAGE_KEYS.WELCOME_TOUR_SKIPPED,
+  STORAGE_KEYS.THEME_LEGACY,
+  STORAGE_KEYS.THEME,
   "bookgarden_tour_",
   "bookgarden_welcome_tour_",
-  "bookgarden-theme",
-  "theme",
 ];
 
 /**
  * Analytics storage prefixes across the platform.
  */
 export const ANALYTICS_KEY_PREFIXES = [
-  "bookgarden_view_history",
-  "bookgarden_reader_dwell",
+  STORAGE_KEYS.RECENT_VIEWS,
+  STORAGE_KEYS.VIEW_HISTORY_LEGACY,
+  STORAGE_KEYS.READER_DWELL,
   "bookgarden_reading_velocity_",
   "bookgarden_analytics_",
 ];

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronRight, Check, BookOpen, Star, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { safeStorage } from "@/shared/core/storage/privacy-storage";
+import { safeStorage, STORAGE_KEYS } from "@/shared/core/storage/privacy-storage";
 
 const TOUR_STEPS = [
   {
@@ -23,7 +23,7 @@ const TOUR_STEPS = [
   },
 ];
 
-const TOUR_COMPLETED_KEY = process.env.NEXT_PUBLIC_TOUR_COMPLETED_KEY!;
+const TOUR_COMPLETED_KEY = STORAGE_KEYS.TOUR_COMPLETED;
 
 export default function OnboardingTour() {
   const [isVisible, setIsVisible] = useState(false);
