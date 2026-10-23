@@ -9,19 +9,10 @@ import type { User } from "@supabase/supabase-js";
 
 // ─── Security Constants ─────────────────────────────────────
 
-const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS || "5", 10);
-const RATE_LIMIT_WINDOW_MS = parseInt(
-  process.env.RATE_LIMIT_WINDOW_MS || "900000",
-  10,
-); // 15 minutes
-const LOCKOUT_DURATION_MS = parseInt(
-  process.env.LOCKOUT_DURATION_MS || "3600000",
-  10,
-); // 1 hour
-const MAX_IP_LOGIN_ATTEMPTS = parseInt(
-  process.env.MAX_IP_LOGIN_ATTEMPTS || "30",
-  10,
-); // 30 attempts per client IP per window
+const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS!, 10);
+const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS!, 10);
+const LOCKOUT_DURATION_MS = parseInt(process.env.LOCKOUT_DURATION_MS!, 10);
+const MAX_IP_LOGIN_ATTEMPTS = parseInt(process.env.MAX_IP_LOGIN_ATTEMPTS!, 10);
 
 /**
  * Extract audit context from the incoming request headers.

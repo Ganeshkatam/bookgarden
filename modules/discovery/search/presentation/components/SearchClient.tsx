@@ -17,12 +17,8 @@ import { searchBooks } from "@/modules/discovery/search/presentation/actions/sea
 import { safeStorage } from "@/shared/core/storage/privacy-storage";
 
 // ─── Constants ───────────────────────────────────────────────
-const RECENT_SEARCHES_KEY =
-  process.env.NEXT_PUBLIC_RECENT_SEARCHES_KEY || "bookgarden_recent_searches";
-const MAX_RECENT = parseInt(
-  process.env.NEXT_PUBLIC_MAX_RECENT_SEARCHES || "5",
-  10,
-);
+const RECENT_SEARCHES_KEY = process.env.NEXT_PUBLIC_RECENT_SEARCHES_KEY!;
+const MAX_RECENT = parseInt(process.env.NEXT_PUBLIC_MAX_RECENT_SEARCHES!, 10);
 
 // ─── Helpers ─────────────────────────────────────────────────
 function getRecentSearches(): string[] {

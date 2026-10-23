@@ -5,7 +5,7 @@ import {
   PayloadValidationError,
 } from "../../core/events/payload-validators";
 
-const parsedMax = parseInt(process.env.OUTBOX_MAX_RETRIES || "3", 10);
+const parsedMax = parseInt(process.env.OUTBOX_MAX_RETRIES!, 10);
 const MAX_RETRIES = Number.isInteger(parsedMax) && parsedMax > 0 ? parsedMax : 3;
 
 /**

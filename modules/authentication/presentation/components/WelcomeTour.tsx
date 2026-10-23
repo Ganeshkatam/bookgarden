@@ -24,10 +24,8 @@ interface TourStep {
   tips?: string[];
 }
 
-const WELCOME_TOUR_COMPLETED_KEY =
-  process.env.NEXT_PUBLIC_WELCOME_TOUR_COMPLETED_KEY || "tour-completed";
-const WELCOME_TOUR_SKIPPED_KEY =
-  process.env.NEXT_PUBLIC_WELCOME_TOUR_SKIPPED_KEY || "tour-skipped";
+const WELCOME_TOUR_COMPLETED_KEY = process.env.NEXT_PUBLIC_WELCOME_TOUR_COMPLETED_KEY!;
+const WELCOME_TOUR_SKIPPED_KEY = process.env.NEXT_PUBLIC_WELCOME_TOUR_SKIPPED_KEY!;
 
 interface WelcomeTourProps {
   isOpen: boolean;

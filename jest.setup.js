@@ -1,3 +1,6 @@
+const { loadEnvConfig } = require("@next/env");
+loadEnvConfig(process.cwd());
+
 const crypto = require("crypto");
 const { TextEncoder, TextDecoder } = require("util");
 
