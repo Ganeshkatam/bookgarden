@@ -6,7 +6,7 @@ import { BookMapper } from "@/modules/library/application/mappers/BookMapper";
 
 import { ServerActionResult } from "@/lib/actions/action-result";
 
-const PAGE_SIZE = parseInt(process.env.SEARCH_PAGE_SIZE!, 10);
+const PAGE_SIZE = 20;
 
 export async function searchBooks(
   query: string,
