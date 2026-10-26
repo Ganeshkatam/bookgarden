@@ -7,12 +7,17 @@ import { SecurityAction } from "@/shared/kernel/security/SecurityAction";
 import { headers } from "next/headers";
 import type { User } from "@supabase/supabase-js";
 
-// ─── Security Constants ─────────────────────────────────────
+import { getAuthRateLimitConfig } from "../../services/auth-rate-limit-config";
 
-const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS!, 10);
-const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS!, 10);
-const LOCKOUT_DURATION_MS = parseInt(process.env.LOCKOUT_DURATION_MS!, 10);
-const MAX_IP_LOGIN_ATTEMPTS = parseInt(process.env.MAX_IP_LOGIN_ATTEMPTS!, 10);
+// ─── Security Configuration ──────────────────────────────────
+
+const authRateLimitConfig = getAuthRateLimitConfig();
+const {
+  maxLoginAttempts: MAX_LOGIN_ATTEMPTS,
+  rateLimitWindowMs: RATE_LIMIT_WINDOW_MS,
+  lockoutDurationMs: LOCKOUT_DURATION_MS,
+  maxIpLoginAttempts: MAX_IP_LOGIN_ATTEMPTS,
+} = authRateLimitConfig;
 
 /**
  * Extract audit context from the incoming request headers.
