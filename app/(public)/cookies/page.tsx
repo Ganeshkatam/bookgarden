@@ -285,6 +285,13 @@ export default function CookiesPage() {
                     <td className="p-3">Session Only</td>
                     <td className="p-3">Measures active page dwell time for reading statistics without third-party tracking.</td>
                   </tr>
+                  <tr>
+                    <td className="p-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">Vercel Web Analytics</td>
+                    <td className="p-3">Vercel Inc.</td>
+                    <td className="p-3 font-mono text-[11px]">Cookieless Ephemeral Telemetry (Analytics Consent)</td>
+                    <td className="p-3">Session Only</td>
+                    <td className="p-3">Anonymized performance and traffic metrics (page views, route transitions, device type). Disabled by default and never loaded without explicit analytics consent.</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
