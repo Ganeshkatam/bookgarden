@@ -1,12 +1,3 @@
-desktop
-desktop/
-desktop/**
-mobile
-mobile/
-mobile/**
-backend
-backend/
-backend/**
 .git
 .git/
 .git/**

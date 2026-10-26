@@ -9,20 +9,14 @@ const nextConfig = {
     },
   },
   allowedDevOrigins: [
-    "acorn-daily-overture.ngrok-free.dev",
-    "*.ngrok-free.dev",
-    "*.ngrok-free.app",
-    "*.ngrok.io",
-    "*.ngrok.app",
+    "*.tomesphere.in",
+    "*.vercel.app"
   ],
   experimental: {
     serverActions: {
       allowedOrigins: [
-        "acorn-daily-overture.ngrok-free.dev",
-        "*.ngrok-free.dev",
-        "*.ngrok-free.app",
-        "*.ngrok.io",
-        "*.ngrok.app",
+        "*.tomesphere.in",
+        "*.vercel.app"
       ],
     },
   },
