@@ -10,6 +10,7 @@ import { GetActiveAnnouncementsQueryHandler } from "@/modules/announcements/appl
 import { AnnouncementBanner } from "@/modules/announcements/presentation/components/AnnouncementBanner";
 import { AnnouncementNotice } from "@/modules/announcements/presentation/components/AnnouncementNotice";
 import CookieConsentBanner from "@/components/cookies/CookieConsentBanner";
+import VercelAnalytics from "@/components/analytics/VercelAnalytics";
 
 const atkinson = Atkinson_Hyperlegible({
   subsets: ["latin"],
@@ -130,6 +131,7 @@ export default async function RootLayout({
           <AnnouncementNotice announcements={activeAnnouncements} />
           <CookieConsentBanner />
           {children}
+          <VercelAnalytics />
         </Providers>
       </body>
     </html>
