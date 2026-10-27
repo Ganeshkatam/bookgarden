@@ -11,7 +11,6 @@ import {
   signInWithGoogle,
   sendMagicLinkServer,
   verifyMagicLinkServer,
-  getMFAStatus,
 } from "@/modules/authentication/presentation/actions/auth";
 import { showError, showSuccess } from "@/lib/toast";
 import {
@@ -63,10 +62,9 @@ export default function EnhancedLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
-  const [step, setStep] = useState<"input" | "password" | "otp" | "mfa" | "magic-link-sent">(
+  const [step, setStep] = useState<"input" | "password" | "otp" | "magic-link-sent">(
     "input",
   );
-  const [mfaCode, setMfaCode] = useState("");
   const [authMode, setAuthMode] = useState<"password" | "magic">("password");
   const [otp, setOtp] = useState("");
   const [isPhone, setIsPhone] = useState(false);
@@ -98,19 +96,6 @@ export default function EnhancedLoginPage() {
   const handleInputChange = (value: string) => {
     setInput(value);
     setIsPhone(detectInputType(value) === "phone");
-  };
-
-  const checkMFA = async () => {
-    try {
-      const res = await getMFAStatus();
-      if (true && res.isEnabled) {
-        setStep("mfa");
-        return true;
-      }
-      return false;
-    } catch {
-      return false;
-    }
   };
 
   /* ── auth handlers ── */
@@ -201,29 +186,10 @@ export default function EnhancedLoginPage() {
         return;
       }
 
-      const mfaRequired = await checkMFA();
-      if (mfaRequired) {
-        setLoading(false);
-        return;
-      }
       showSuccess("Logged in successfully!");
       router.push(redirectTo);
     } catch (err: any) {
       showError(err.message || "Invalid password");
-      setLoading(false);
-    }
-  };
-
-  const handleMFAVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      throw new Error(
-        "MFA is currently being migrated to Server Actions. Please contact support.",
-      );
-    } catch (err: any) {
-      showError(err.message || "Invalid code");
-    } finally {
       setLoading(false);
     }
   };
@@ -277,58 +243,6 @@ export default function EnhancedLoginPage() {
       setLoadingGoogle(false);
     }
   };
-
-  /* ══════════════════════════════════════════
-       MFA Screen (minimal)
-    ══════════════════════════════════════════ */
-  if (step === "mfa") {
-    return (
-      <div className="min-h-screen bg-[var(--surface-canvas)] flex items-center justify-center p-4">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-indigo-600/8 rounded-full blur-[120px]" />
-        </div>
-        <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 shadow-2xl">
-          <div className="text-center mb-8">
-            <div className="w-14 h-14 bg-indigo-500/15 border border-indigo-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Lock className="text-indigo-600 dark:text-indigo-400" size={28} />
-            </div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
-              Two-Factor Auth
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400 text-sm">
-              Enter the 6-digit code from your authenticator app
-            </p>
-          </div>
-          <form onSubmit={handleMFAVerify} className="space-y-5">
-            <input
-              type="text"
-              maxLength={6}
-              value={mfaCode}
-              onChange={(e) =>
-                setMfaCode(e.target.value.replace(/[^0-9]/g, ""))
-              }
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3.5 text-slate-900 dark:text-white text-center text-xl tracking-[0.5em] font-mono focus:outline-none focus:border-indigo-600 dark:focus:border-indigo-400 transition-all"
-              placeholder="000000"
-              autoFocus
-            />
-            <button
-              type="submit"
-              disabled={loading || mfaCode.length !== 6}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {loading ? (
-                <Spinner />
-              ) : (
-                <>
-                  Verify <ArrowRight size={16} />
-                </>
-              )}
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
 
   /* ══════════════════════════════════════════
        Centralized Workspace Card

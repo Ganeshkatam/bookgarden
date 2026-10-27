@@ -137,6 +137,9 @@ tomesphere-app
 │   ├── template.tsx
 │   └── theme-init.ts
 ├── components
+│   ├── analytics
+│   │   ├── VercelAnalytics.test.tsx
+│   │   └── VercelAnalytics.tsx
 │   ├── cookies
 │   │   ├── CookieConsentBanner.test.tsx
 │   │   ├── CookieConsentBanner.tsx
@@ -206,11 +209,11 @@ tomesphere-app
 │   ├── authentication
 │   │   ├── presentation
 │   │   │   ├── actions
+│   │   │   │   ├── auth.test.ts
 │   │   │   │   └── auth.ts
 │   │   │   ├── components
 │   │   │   │   ├── AuthTopBar.tsx
 │   │   │   │   ├── LoginClient.tsx
-│   │   │   │   ├── MFASetup.tsx
 │   │   │   │   ├── OnboardingTour.tsx
 │   │   │   │   ├── PhoneAuth.tsx
 │   │   │   │   ├── PhoneInput.tsx
@@ -222,7 +225,11 @@ tomesphere-app
 │   │   │       ├── LoginScreen.tsx
 │   │   │       └── SignupScreen.tsx
 │   │   ├── services
-│   │   │   └── email-validation.ts
+│   │   │   ├── auth-rate-limit-config.test.ts
+│   │   │   ├── auth-rate-limit-config.ts
+│   │   │   ├── email-validation.ts
+│   │   │   ├── instrumentation-startup.test.ts
+│   │   │   └── rate-limit-key.ts
 │   │   └── types
 │   ├── authorization
 │   │   ├── application
@@ -320,6 +327,7 @@ tomesphere-app
 │   │   │   │   └── BookRow.ts
 │   │   │   ├── read-models
 │   │   │   │   └── BookReadModel.ts
+│   │   │   ├── CatalogPolicySemantics.test.ts
 │   │   │   ├── SupabaseBookFileRepository.ts
 │   │   │   └── SupabaseBookRepository.ts
 │   │   ├── presentation
@@ -607,6 +615,7 @@ tomesphere-app
 │   │       │       └── SearchProjectionRepository.ts
 │   │       ├── presentation
 │   │       │   ├── actions
+│   │       │   │   ├── search.test.ts
 │   │       │   │   ├── search.ts
 │   │       │   │   ├── searchActions.test.ts
 │   │       │   │   └── searchActions.ts
@@ -614,6 +623,7 @@ tomesphere-app
 │   │       │   │   ├── CommandPalette.tsx
 │   │       │   │   ├── GlobalSearchInput.tsx
 │   │       │   │   ├── SearchBar.tsx
+│   │       │   │   ├── SearchClient.test.tsx
 │   │       │   │   ├── SearchClient.tsx
 │   │       │   │   ├── SearchFacetSidebar.test.tsx
 │   │       │   │   ├── SearchFacetSidebar.tsx
@@ -940,6 +950,7 @@ tomesphere-app
 │   │   │   │           └── PreferencesForm.tsx
 │   │   │   ├── presentation
 │   │   │   │   ├── actions
+│   │   │   │   │   ├── profile.test.ts
 │   │   │   │   │   └── profile.ts
 │   │   │   │   ├── components
 │   │   │   │   │   ├── AccountLayoutShell.tsx
@@ -994,6 +1005,7 @@ tomesphere-app
 │   │   │   │   │       └── SupabaseSecurityRepository.ts
 │   │   │   │   └── presentation
 │   │   │   │       ├── actions
+│   │   │   │       │   ├── security.test.ts
 │   │   │   │       │   └── security.ts
 │   │   │   │       └── components
 │   │   │   │           ├── DangerZone.tsx
@@ -1023,6 +1035,7 @@ tomesphere-app
 │   ├── notifications
 │   │   ├── application
 │   │   │   └── event-handlers
+│   │   │       ├── NotificationEventHandlers.test.ts
 │   │   │       └── NotificationEventHandlers.ts
 │   │   ├── domain
 │   │   │   ├── repositories
@@ -1048,6 +1061,7 @@ tomesphere-app
 │   │   │   │   ├── ReadingGoalProgress.tsx
 │   │   │   │   └── ReadingStreak.tsx
 │   │   │   ├── services
+│   │   │   │   ├── view-history.test.ts
 │   │   │   │   └── view-history.ts
 │   │   │   └── types
 │   │   ├── application
@@ -1312,17 +1326,14 @@ tomesphere-app
 │   ├── security
 │   │   ├── application
 │   │   │   ├── BearerAuthGuard.ts
-│   │   │   ├── requireAuth.ts
-│   │   │   └── SecurityService.ts
+│   │   │   └── requireAuth.ts
 │   │   ├── domain
 │   │   │   ├── AuditLogger.ts
-│   │   │   ├── AuthenticationProvider.ts
-│   │   │   ├── MfaPolicy.ts
 │   │   │   └── RateLimiter.ts
 │   │   └── infrastructure
 │   │       ├── PostgresAuditLogger.test.ts
 │   │       ├── PostgresAuditLogger.ts
-│   │       ├── SupabaseAuthenticationProvider.ts
+│   │       ├── SupabaseRateLimiter.test.ts
 │   │       └── SupabaseRateLimiter.ts
 │   ├── statistics
 │   │   ├── application
@@ -1338,15 +1349,21 @@ tomesphere-app
 │   │   │   └── repositories
 │   │   └── infrastructure
 │   │       ├── read-models
+│   │       │   ├── SupabasePlatformStatisticsReadModel.test.ts
 │   │       │   └── SupabasePlatformStatisticsReadModel.ts
 │   │       └── repositories
 │   ├── storage
 │   │   ├── components
 │   │   │   └── UniversalFileUpload.tsx
+│   │   ├── infrastructure
+│   │   │   └── StoragePolicySemantics.test.ts
 │   │   ├── pages
 │   │   ├── presentation
-│   │   │   └── actions
-│   │   │       └── storage.ts
+│   │   │   ├── actions
+│   │   │   │   ├── storage.test.ts
+│   │   │   │   └── storage.ts
+│   │   │   └── utils
+│   │   │       └── file-validation.ts
 │   │   ├── services
 │   │   │   └── pdf-description-generator.ts
 │   │   └── types
@@ -1447,6 +1464,7 @@ tomesphere-app
 │           │       └── SupabaseProfileRepository.ts
 │           └── presentation
 │               ├── actions
+│               │   ├── notifications.test.ts
 │               │   ├── notifications.ts
 │               │   └── profile.ts
 │               └── components
@@ -1978,7 +1996,16 @@ tomesphere-app
 │   │   ├── 20261008000000_pr0_production_security_containment.sql
 │   │   ├── 20261008000000_pr2_reader_content_security.sql
 │   │   ├── 20261009000000_pr1_event_idempotency_and_deduplication.sql
-│   │   └── 20261022000000_rebrand_bookgarden_announcements_and_faqs.sql
+│   │   ├── 20261022000000_rebrand_bookgarden_announcements_and_faqs.sql
+│   │   ├── 20261022010000_harden_storage_rls_ownership_policies.sql
+│   │   ├── 20261022020000_harden_storage_authorization.sql
+│   │   ├── 20261022030000_atomic_rate_limiting.sql
+│   │   └── 20261022040000_harden_catalog_rls_visibility.sql
+│   ├── rollbacks
+│   │   ├── 20261022020000_harden_storage_authorization_rollback.sql
+│   │   ├── 20261022030000_atomic_rate_limiting_rollback.sql
+│   │   ├── 20261022040000_harden_catalog_rls_visibility_rollback.sql
+│   │   └── 20261022040000_harden_catalog_rls_visibility_security_preserving_recovery.sql
 │   ├── config.toml
 │   └── schema_210726183034.sql
 ├── templates
@@ -2052,6 +2079,7 @@ tomesphere-app
 ├── eslint.config.mjs
 ├── instrumentation.ts
 ├── jest.config.js
+├── jest.env.js
 ├── jest.setup.js
 ├── knip.json
 ├── next-env.d.ts

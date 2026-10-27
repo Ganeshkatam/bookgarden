@@ -553,7 +553,7 @@ export async function updatePasswordServer(password: string): Promise<ServerActi
   }
 }
 
-// ─── MFA & OTP ────────────────────────────────────────────
+// ─── Verification & OTP ────────────────────────────────────
 
 export async function getUserVerificationStatus(): Promise<{
   emailVerified: boolean;
@@ -597,27 +597,6 @@ export async function resendVerificationEmail(): Promise<void> {
   const auditLogger = new PostgresAuditLogger(supabase);
   const context = await getAuditContext(user.id);
   await auditLogger.logAction(SecurityAction.EmailVerificationSent, context);
-}
-
-export async function getMFAStatus(): Promise<{ isEnabled: boolean }> {
-  // MFA is deferred from V1 scope. Always return disabled to prevent lockout states.
-  return { isEnabled: false };
-}
-
-export async function enrollMFA(): Promise<{
-  factorId: string;
-  secret: string;
-  uri: string;
-}> {
-  throw new Error("Multi-factor authentication is disabled in V1.");
-}
-
-export async function verifyMFA(_factorId: string, _code: string): Promise<void> {
-  throw new Error("Multi-factor authentication is disabled in V1.");
-}
-
-export async function disableMFA(): Promise<void> {
-  throw new Error("Multi-factor authentication is disabled in V1.");
 }
 
 export async function sendPhoneOTP(phone: string): Promise<void> {
