@@ -1,3 +1,17 @@
+jest.mock("@/shared/core/database/client", () => ({
+  supabase: {},
+}));
+
+jest.mock("@/modules/discovery/search/application/event-handlers/SearchAnalyticsHandler", () => ({
+  SearchAnalyticsHandler: jest.fn().mockImplementation(() => ({
+    handle: jest.fn(),
+  })),
+}));
+
+jest.mock("@/modules/discovery/search/application/event-handlers", () => ({
+  initializeSearchEventHandlers: jest.fn(),
+}));
+
 import { register } from "@/instrumentation";
 import {
   getAuthRateLimitConfig,
@@ -10,7 +24,12 @@ describe("Application Startup Instrumentation — Auth Rate-Limit Validation", (
 
   beforeEach(() => {
     jest.resetModules();
-    process.env = { ...originalEnv, NEXT_RUNTIME: "nodejs" };
+    process.env = {
+      ...originalEnv,
+      NEXT_RUNTIME: "nodejs",
+      NEXT_PUBLIC_SUPABASE_URL: originalEnv.NEXT_PUBLIC_SUPABASE_URL || "https://mock-ci.supabase.co",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: originalEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY || "mock-ci-anon-key",
+    };
     resetAuthRateLimitConfigCache();
   });
 

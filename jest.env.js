@@ -18,3 +18,11 @@ if (fs.existsSync(envLocalPath)) {
     }
   }
 }
+
+// Fallback test environment configuration for headless CI environments lacking .env.local
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://mock-ci.supabase.co";
+}
+if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "mock-ci-anon-key";
+}
