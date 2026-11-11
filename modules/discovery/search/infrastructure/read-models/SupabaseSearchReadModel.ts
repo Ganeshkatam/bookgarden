@@ -150,38 +150,36 @@ export class SupabaseSearchReadModel {
     }));
   }
 
-  async getRecentSearches(userId: string): Promise<string[]> {
-    const { data, error } = await this.supabase.rpc("get_recent_searches_v1", {
-      p_user_id: userId,
-    });
-
-    if (error) {
-      console.error("[SearchReadModel] Failed to fetch recent searches", error);
-      return [];
-    }
-
-    return (data || []).map((row) => row.query);
+  async getRecentSearches(_userId: string): Promise<string[]> {
+    // Database search history is retired. Returns empty list (handled client-side via localStorage).
+    return [];
   }
 
   async getTrendingSearches(): Promise<string[]> {
     // Cache trending searches for 1 hour to prevent constant DB hits
     const getCachedTrending = unstable_cache(
       async () => {
-        const { data, error } = await this.supabase
-          .from("trending_searches" as any)
-          .select("normalized_query")
-          .order("search_count", { ascending: false })
-          .limit(5);
+        try {
+          const { data, error } = await this.supabase
+            .from("trending_books_projection")
+            .select("book:books(title)")
+            .order("weekly_score", { ascending: false })
+            .limit(5);
 
-        if (error) {
+          if (error || !data) {
+            return [];
+          }
+
+          return data
+            .map((r: any) => r.book?.title)
+            .filter((title: string | undefined): title is string => Boolean(title));
+        } catch (err) {
           console.error(
             "[SearchReadModel] Failed to fetch trending searches",
-            error,
+            err,
           );
           return [];
         }
-
-        return data?.map((r: any) => r.normalized_query) || [];
       },
       ["trending-searches"],
       { revalidate: 3600 }, // 1 hour

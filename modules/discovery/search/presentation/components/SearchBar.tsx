@@ -69,11 +69,12 @@ export function SearchBar({
   // Fetch recent and trending searches when focusing or query is empty
   const fetchRecentAndTrending = useCallback(async () => {
     try {
-      const [recent, trending] = await Promise.all([
-        getRecentSearchesAction(),
-        getTrendingSearchesAction(),
-      ]);
-      setRecentSearches(recent || []);
+      const localRecent: string[] = typeof window !== "undefined"
+        ? JSON.parse(localStorage.getItem("bookgarden_recent_searches") || "[]")
+        : [];
+
+      const trending = await getTrendingSearchesAction();
+      setRecentSearches(localRecent);
       setTrendingSearches(trending || []);
     } catch (err) {
       console.error("Failed to load search history and trends:", err);
@@ -135,6 +136,15 @@ export function SearchBar({
     setIsFocused(false);
     inputRef.current?.blur();
     if (targetQuery) {
+      if (typeof window !== "undefined") {
+        try {
+          const current: string[] = JSON.parse(localStorage.getItem("bookgarden_recent_searches") || "[]");
+          const updated = [targetQuery, ...current.filter((q) => q.toLowerCase() !== targetQuery.toLowerCase())].slice(0, 5);
+          localStorage.setItem("bookgarden_recent_searches", JSON.stringify(updated));
+        } catch {
+          // ignore localStorage failure
+        }
+      }
       router.push(`/search?q=${encodeURIComponent(targetQuery)}`);
     }
   };
@@ -142,7 +152,15 @@ export function SearchBar({
   const handleDeleteRecentItem = async (e: React.MouseEvent, item: string) => {
     e.stopPropagation();
     e.preventDefault();
-    setRecentSearches((prev) => prev.filter((q) => q !== item));
+    setRecentSearches((prev) => {
+      const next = prev.filter((q) => q !== item);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("bookgarden_recent_searches", JSON.stringify(next));
+        } catch {}
+      }
+      return next;
+    });
     try {
       await deleteSearchHistoryItemAction(item);
     } catch (err) {
@@ -154,6 +172,11 @@ export function SearchBar({
     e.stopPropagation();
     e.preventDefault();
     setRecentSearches([]);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("bookgarden_recent_searches");
+      } catch {}
+    }
     try {
       await clearRecentSearchesAction();
     } catch (err) {

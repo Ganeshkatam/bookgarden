@@ -73,9 +73,17 @@ describe("Search Presentation Actions", () => {
       from: jest.fn().mockImplementation((table: string) => ({
         select: jest.fn().mockReturnThis(),
         order: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValue({
-          data: [{ normalized_query: "tolkien" }, { normalized_query: "dune" }],
-          error: null,
+        limit: jest.fn().mockImplementation(() => {
+          if (table === "trending_books_projection") {
+            return Promise.resolve({
+              data: [{ book: { title: "Dune" } }, { book: { title: "The Hobbit" } }],
+              error: null,
+            });
+          }
+          return Promise.resolve({
+            data: [],
+            error: null,
+          });
         }),
         insert: jest.fn().mockResolvedValue({ error: null }),
         delete: jest.fn().mockReturnThis(),
@@ -111,19 +119,18 @@ describe("Search Presentation Actions", () => {
     const results = await getTrendingSearchesAction();
 
     expect(results).toBeDefined();
-    expect(results).toContain("tolkien");
+    expect(results).toContain("Dune");
   });
 
-  it("should return recent searches for authenticated user via getRecentSearchesAction", async () => {
+  it("should return empty recent searches array from server (handled client-side)", async () => {
     const results = await getRecentSearchesAction();
 
-    expect(results).toEqual(["sci-fi", "asimov"]);
+    expect(results).toEqual([]);
   });
 
-  it("should clear search history via clearRecentSearchesAction", async () => {
+  it("should succeed via clearRecentSearchesAction", async () => {
     const result = await clearRecentSearchesAction();
 
     expect(result.success).toBe(true);
-    expect(mockSupabase.from).toHaveBeenCalledWith("search_history");
   });
 });

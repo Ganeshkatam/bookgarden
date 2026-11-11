@@ -56,32 +56,11 @@ export async function getRecentSearchesAction(): Promise<string[]> {
 }
 
 export async function clearRecentSearchesAction(): Promise<{ success: boolean }> {
-  const { supabase } = await getFacade();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false };
-
-  const { error } = await supabase
-    .from("search_history")
-    .delete()
-    .eq("user_id", user.id);
-
-  return { success: !error };
+  // Database search history is retired. Handled client-side via localStorage.
+  return { success: true };
 }
 
-export async function deleteSearchHistoryItemAction(query: string): Promise<{ success: boolean }> {
-  const { supabase } = await getFacade();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || !query) return { success: false };
-
-  const { error } = await supabase
-    .from("search_history")
-    .delete()
-    .eq("user_id", user.id)
-    .eq("normalized_query", query.trim().toLowerCase());
-
-  return { success: !error };
+export async function deleteSearchHistoryItemAction(_query: string): Promise<{ success: boolean }> {
+  // Database search history is retired. Handled client-side via localStorage.
+  return { success: true };
 }
