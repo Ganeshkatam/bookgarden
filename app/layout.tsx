@@ -34,7 +34,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL!),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://bookgarden.tomesphere.in"),
   title: {
     default: "BookGarden - Digital Book Discovery, Knowledge Archive & Reader",
     template: "%s | BookGarden",
