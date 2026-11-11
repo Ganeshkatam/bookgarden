@@ -36,24 +36,30 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL!),
   title: {
-    default: "BookGarden - Digital Book Discovery & Reader",
+    default: "BookGarden - Digital Book Discovery, Knowledge Archive & Reader",
     template: "%s | BookGarden",
   },
   description:
-    "Discover, explore, and read digital books with BookGarden. A comprehensive platform with curated recommendations, archival collections, and personalized reading streaks.",
+    "Explore, read, and annotate digital books in an integrated reader. Discover curated literature, verified author directories, and archival collections with distraction-free reading.",
   keywords: [
     "books",
     "digital books",
     "book discovery",
-    "online reading",
+    "online reader",
+    "public domain books",
     "BookGarden",
-    "annotations",
-    "ebooks",
+    "reading annotations",
+    "epub reader",
+    "pdf reader",
     "curated collections",
+    "reading progress",
   ],
   authors: [{ name: "BookGarden Editorial Team" }],
   creator: "BookGarden",
   publisher: "BookGarden",
+  alternates: {
+    canonical: "/",
+  },
   icons: {
     icon: [
       { url: "/logo.svg", type: "image/svg+xml" },
@@ -68,20 +74,36 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "BookGarden",
     locale: "en_US",
-    title: "BookGarden - Digital Book Discovery & Reader",
+    title: "BookGarden - Digital Book Discovery, Knowledge Archive & Reader",
     description:
-      "Discover, explore, and read digital books with BookGarden. Curated collections, personalized lists, and rich annotations.",
+      "Explore, read, and annotate digital books in an integrated reader. Discover curated literature, verified author directories, and archival collections.",
     url: "https://bookgarden.tomesphere.in",
+    images: [
+      {
+        url: "/logo.png?v=5",
+        width: 512,
+        height: 512,
+        alt: "BookGarden Logo",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "BookGarden - Digital Book Discovery & Reader",
+    title: "BookGarden - Digital Book Discovery, Knowledge Archive & Reader",
     description:
-      "Discover, explore, and read digital books with BookGarden.",
+      "Explore, read, and annotate digital books in an integrated reader. Discover curated literature and archival collections.",
+    images: ["/logo.png?v=5"],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 

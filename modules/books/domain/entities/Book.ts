@@ -17,6 +17,7 @@ export interface BookProps {
   isPublished?: boolean;
   isArchived?: boolean;
   version?: number;
+  language?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -76,6 +77,9 @@ export class Book extends AggregateRoot<BookProps> {
   }
   get version(): number {
     return this.props.version ?? 1;
+  }
+  get language(): string | null {
+    return this.props.language || null;
   }
 
   getPrimaryFile(): BookFile | null {
@@ -159,6 +163,47 @@ export class Book extends AggregateRoot<BookProps> {
 
     import("../events/BookEvents").then(({ BookArchivedEvent }) => {
       this.addDomainEvent(new BookArchivedEvent(this.id, this.version));
+    });
+  }
+
+  public restore(): void {
+    if (!this.isArchived) return;
+
+    this.props.isArchived = false;
+    this.props.updatedAt = new Date();
+    this.incrementVersion();
+
+    import("../events/BookEvents").then(({ BookRestoredEvent }) => {
+      this.addDomainEvent(new BookRestoredEvent(this.id, this.version));
+    });
+  }
+
+  public changeLanguage(language: string): void {
+    if (this.isArchived) throw new Error("Cannot change language of an archived book.");
+    if (!language || !language.trim()) throw new Error("Language cannot be empty.");
+
+    this.props.language = language.trim();
+    this.props.updatedAt = new Date();
+    this.incrementVersion();
+
+    import("../events/BookEvents").then(({ BookUpdatedEvent }) => {
+      this.addDomainEvent(
+        new BookUpdatedEvent(this.id, this.version, { language: this.props.language }),
+      );
+    });
+  }
+
+  public replaceFiles(files: BookFile[]): void {
+    if (this.isArchived) throw new Error("Cannot update files of an archived book.");
+
+    this.props.files = [...files];
+    this.props.updatedAt = new Date();
+    this.incrementVersion();
+
+    import("../events/BookEvents").then(({ BookUpdatedEvent }) => {
+      this.addDomainEvent(
+        new BookUpdatedEvent(this.id, this.version, { files: this.props.files }),
+      );
     });
   }
 

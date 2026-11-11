@@ -1,5 +1,5 @@
 import { getDiscoveryConfiguration } from "@/modules/discovery/presentation/factories/getDiscoveryConfiguration";
-import { DiscoveryPage } from "../_components/DiscoveryPage";
+import { DiscoveryPage } from "@/modules/discovery/presentation/components/DiscoveryPage";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

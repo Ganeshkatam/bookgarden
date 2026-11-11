@@ -23,6 +23,7 @@ export class BookMapper {
       isTextbook: raw.is_textbook || false,
       isPublished: raw.is_published ?? false,
       isArchived: raw.is_archived ?? false,
+      language: raw.language ?? null,
       version: raw.version ?? 1,
       subjects:
         (raw as any).book_subjects
@@ -48,6 +49,7 @@ export class BookMapper {
       is_textbook: domain.isTextbook,
       is_published: domain.isPublished,
       is_archived: domain.isArchived,
+      language: domain.language ?? undefined,
       version: domain.version,
       release_date: domain.publishedDate ?? undefined,
       pages: domain.pageCount ?? undefined,

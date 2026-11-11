@@ -1767,6 +1767,18 @@ export type Database = {
           raw_views: number
         }[]
       }
+      check_rate_limit: {
+        Args: {
+          p_key: string
+          p_max_attempts: number
+          p_window_seconds: number
+        }
+        Returns: {
+          allowed: boolean
+          remaining: number
+          retry_after_ms: number
+        }[]
+      }
       claim_outbox_events_legacy_pub_v0: {
         Args: { limit_count: number }
         Returns: {
@@ -1795,6 +1807,33 @@ export type Database = {
         }
       }
       cleanup_expired_rate_limits: { Args: never; Returns: undefined }
+      consume_rate_limit: {
+        Args: {
+          p_key: string
+          p_lockout_seconds: number
+          p_max_attempts: number
+          p_window_seconds: number
+        }
+        Returns: {
+          allowed: boolean
+          attempt_id: string
+          attempt_time: string
+          remaining: number
+          retry_after_ms: number
+        }[]
+      }
+      consume_request_budget: {
+        Args: {
+          p_key: string
+          p_max_requests: number
+          p_window_seconds: number
+        }
+        Returns: {
+          allowed: boolean
+          remaining: number
+          retry_after_ms: number
+        }[]
+      }
       create_notification_idempotent: {
         Args: {
           p_aggregate_id: string
@@ -2022,6 +2061,24 @@ export type Database = {
         }
         Returns: boolean
       }
+      record_login_failure: {
+        Args: {
+          p_attempt_id?: string
+          p_key: string
+          p_lockout_seconds?: number
+          p_max_attempts?: number
+        }
+        Returns: {
+          attempts: number
+          locked: boolean
+          remaining: number
+          retry_after_ms: number
+        }[]
+      }
+      record_login_success: {
+        Args: { p_attempt_id?: string; p_key: string }
+        Returns: undefined
+      }
       refresh_category_document: {
         Args: { target_category: string }
         Returns: undefined
@@ -2039,6 +2096,11 @@ export type Database = {
         Returns: undefined
       }
       refresh_trending_searches_v1: { Args: never; Returns: undefined }
+      release_in_flight_attempt: {
+        Args: { p_attempt_id?: string; p_key: string }
+        Returns: undefined
+      }
+      reset_rate_limit: { Args: { p_key: string }; Returns: undefined }
       sanitize_account_logs: {
         Args: { target_user_id: string }
         Returns: undefined

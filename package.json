@@ -10,8 +10,7 @@
     "start": "cross-env NODE_OPTIONS=\"--max-old-space-size=768\" next start",
     "lint": "eslint .",
     "lint:arch": "depcruise --config .depcruise.js modules app",
-    "lint:future": "eslint future",
-    "typecheck:future": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "test": "jest",
     "update:tree": "node scripts/update-tree.mjs",
     "tree": "node scripts/update-tree.mjs"
@@ -31,7 +30,7 @@
     "epubjs": "^0.3.93",
     "framer-motion": "^10.16.4",
     "fuse.js": "^7.3.0",
-    "lucide-react": "latest",
+    "lucide-react": "1.25.0",
     "next": "^16.2.4",
     "pdfjs-dist": "^6.2.108",
     "pg": "^8.22.0",

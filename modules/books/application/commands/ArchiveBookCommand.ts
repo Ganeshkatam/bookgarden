@@ -1,10 +1,25 @@
-// Shell for ArchiveBookCommand - To be implemented
+import { BookRepository } from "../../domain/repositories/BookRepository";
+import { BookId } from "../../domain/value-objects";
+
 export interface ArchiveBookCommand {
   id: string;
 }
 
 export class ArchiveBookHandler {
+  constructor(private readonly repository?: BookRepository) {}
+
   async execute(command: ArchiveBookCommand): Promise<void> {
-    console.warn("[Deferred] ArchiveBookCommand is not yet implemented. This boundary is reserved for future catalog management.");
+    if (!this.repository) {
+      console.warn("[Deferred] ArchiveBookCommand repository not injected. Operating in deferred mode.");
+      return;
+    }
+
+    const book = await this.repository.findById(BookId.create(command.id));
+    if (!book) {
+      throw new Error(`Book with id ${command.id} not found`);
+    }
+
+    book.archive();
+    await this.repository.save(book);
   }
 }

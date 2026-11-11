@@ -26,7 +26,7 @@ BookGarden provides readers, students, and researchers with a focused, distracti
 
 | Layer | Technology |
 | :--- | :--- |
-| **Runtime & Framework** | Next.js 16 (Turbopack, App Router, React 19) on Node.js 24+ |
+| **Runtime & Framework** | Next.js 16 (Turbopack, App Router, React 18) on Node.js 22+ |
 | **Language** | TypeScript 5 (Strict Mode) |
 | **Styling** | Tailwind CSS with Semantic Theme Tokens (Light & Dark modes) |
 | **Database** | PostgreSQL 17.6 via Supabase |
@@ -39,7 +39,7 @@ BookGarden provides readers, students, and researchers with a focused, distracti
 
 ### Prerequisites
 
-- Node.js 24.0.0 or higher
+- Node.js 22.0.0 or higher
 - npm 10 or higher
 - A configured Supabase project (PostgreSQL 15+)
 

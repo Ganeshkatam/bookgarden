@@ -61,3 +61,13 @@ export class BookArchivedEvent extends DomainEvent<string> {
     Object.freeze(this);
   }
 }
+
+export class BookRestoredEvent extends DomainEvent<string> {
+  public static readonly EVENT_NAME = "BookRestored";
+  public readonly eventName = BookRestoredEvent.EVENT_NAME;
+
+  constructor(aggregateId: string, aggregateVersion: number) {
+    super(aggregateId, aggregateVersion, 1);
+    Object.freeze(this);
+  }
+}

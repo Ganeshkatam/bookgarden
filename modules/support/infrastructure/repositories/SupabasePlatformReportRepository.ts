@@ -1,7 +1,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { IPlatformReportRepository } from "../../domain/repositories/IPlatformReportRepository";
 import { PlatformReport } from "../../domain/entities/PlatformReport";
-import { Database } from "@/shared/core/database/database.types";
+import { Database } from "@/shared/core/types/database";
 
 export class SupabasePlatformReportRepository implements IPlatformReportRepository {
   constructor(private readonly supabase: SupabaseClient<Database>) {}

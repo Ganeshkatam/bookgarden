@@ -14,6 +14,7 @@ export class ExportUserDataHandler {
       collectionsResult,
       bookmarksResult,
       highlightsResult,
+      annotationsResult,
       sessionsResult,
       positionsResult,
     ] = await Promise.all([
@@ -25,6 +26,7 @@ export class ExportUserDataHandler {
         .eq("user_id", userId),
       this.supabase.from("bookmarks").select("*").eq("user_id", userId),
       this.supabase.from("highlights").select("*").eq("user_id", userId),
+      this.supabase.from("annotations").select("*").eq("user_id", userId),
       this.supabase.from("reading_sessions").select("*").eq("user_id", userId),
       this.supabase.from("reading_progress").select("*").eq("user_id", userId),
     ]);
@@ -37,6 +39,7 @@ export class ExportUserDataHandler {
       collections: collectionsResult || [],
       bookmarks: bookmarksResult || [],
       highlights: highlightsResult || [],
+      annotations: annotationsResult || [],
       reading_sessions: sessionsResult || [],
       reading_positions: positionsResult || [],
     };

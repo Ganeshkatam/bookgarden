@@ -2,6 +2,7 @@ import { FinishReadingSessionCommand } from "./command";
 import { FinishReadingSessionOutput } from "./output";
 import { ReaderRepository } from "../../../infrastructure/ReaderRepository";
 import { ReadingPosition } from "../../../domain/ReadingPosition";
+import { ReadingSessionCompleted } from "../../../domain/Events";
 
 export class FinishReadingSessionHandler {
   constructor(private readonly readerRepository: ReaderRepository) {}
@@ -36,13 +37,15 @@ export class FinishReadingSessionHandler {
 
       const finishEvent = session
         .getDomainEvents()
-        .find((e) => e.type === "ReadingSessionCompleted");
+        .find(
+          (e): e is ReadingSessionCompleted =>
+            e.type === "ReadingSessionCompleted",
+        );
 
       session.clearDomainEvents();
 
       return {
         sessionId: session.id,
-        // @ts-ignore
         durationSeconds: finishEvent?.durationSeconds || 0,
       };
     } catch (error) {

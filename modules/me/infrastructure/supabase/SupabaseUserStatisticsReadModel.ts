@@ -1,5 +1,5 @@
 import { SupabaseClient } from "@supabase/supabase-js";
-import { Database } from "@/shared/core/database/database.types";
+import { Database } from "@/shared/core/types/database";
 import {
   GetUserStatisticsQuery,
   UserStatisticsDto,

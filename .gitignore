@@ -44,3 +44,7 @@ next-env.d.ts
 .vercel
 
 desktop/dist/
+
+# supabase
+supabase/.temp/
+

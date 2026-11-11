@@ -126,3 +126,4 @@ export function DiscoveryPage({ config }: { config: DiscoveryConfiguration }) {
     </div>
   );
 }
+

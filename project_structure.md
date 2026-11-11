@@ -1677,7 +1677,6 @@ tomesphere-app
 │   ├── logo.png
 │   ├── logo.svg
 │   └── mock-document.pdf
-├── scratch
 ├── scripts
 │   ├── sanitize-codebase.mjs
 │   └── update-tree.mjs
@@ -1710,7 +1709,6 @@ tomesphere-app
 │   │   ├── database
 │   │   │   ├── admin.ts
 │   │   │   ├── client.ts
-│   │   │   ├── database.types.ts
 │   │   │   └── server.ts
 │   │   ├── events
 │   │   │   ├── EventBus.test.ts
@@ -2008,20 +2006,6 @@ tomesphere-app
 │   │   └── 20261022040000_harden_catalog_rls_visibility_security_preserving_recovery.sql
 │   ├── config.toml
 │   └── schema_210726183034.sql
-├── templates
-│   └── bounded-context
-│       ├── application
-│       ├── domain
-│       │   ├── entities
-│       │   ├── errors
-│       │   ├── events
-│       │   ├── repositories
-│       │   └── value-objects
-│       ├── infrastructure
-│       │   ├── mappers
-│       │   ├── models
-│       │   └── repositories
-│       └── presentation
 ├── test-results
 │   ├── book-book-network-Book-Det-36f85-ce-requests-on-initial-load-chromium
 │   │   └── error-context.md
