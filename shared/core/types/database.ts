@@ -1283,59 +1283,6 @@ export type Database = {
         }
         Relationships: []
       }
-      search_history: {
-        Row: {
-          clicked_document_id: string | null
-          execution_time_ms: number | null
-          filters: Json | null
-          id: string
-          is_slow_query: boolean | null
-          is_zero_result: boolean | null
-          normalized_query: string
-          query: string
-          result_count: number | null
-          searched_at: string | null
-          sort_strategy: string | null
-          user_id: string | null
-        }
-        Insert: {
-          clicked_document_id?: string | null
-          execution_time_ms?: number | null
-          filters?: Json | null
-          id?: string
-          is_slow_query?: boolean | null
-          is_zero_result?: boolean | null
-          normalized_query: string
-          query: string
-          result_count?: number | null
-          searched_at?: string | null
-          sort_strategy?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          clicked_document_id?: string | null
-          execution_time_ms?: number | null
-          filters?: Json | null
-          id?: string
-          is_slow_query?: boolean | null
-          is_zero_result?: boolean | null
-          normalized_query?: string
-          query?: string
-          result_count?: number | null
-          searched_at?: string | null
-          sort_strategy?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "search_history_clicked_document_id_fkey"
-            columns: ["clicked_document_id"]
-            isOneToOne: false
-            referencedRelation: "discovery_search_documents"
-            referencedColumns: ["book_id"]
-          },
-        ]
-      }
       shelf_items: {
         Row: {
           added_at: string | null
@@ -1733,22 +1680,7 @@ export type Database = {
       }
     }
     Views: {
-      trending_searches: {
-        Row: {
-          last_searched_at: string | null
-          normalized_query: string | null
-          search_count: number | null
-        }
-        Relationships: []
-      }
-      trending_searches_v1: {
-        Row: {
-          last_searched_at: string | null
-          normalized_query: string | null
-          search_count: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       calculate_book_popularity_metrics: {
