@@ -62,12 +62,7 @@ describe("Search Presentation Actions", () => {
             error: null,
           });
         }
-        if (fnName === "get_recent_searches_v1") {
-          return Promise.resolve({
-            data: [{ query: "sci-fi" }, { query: "asimov" }],
-            error: null,
-          });
-        }
+        // get_recent_searches_v1 is retired — no mock needed; application returns [] directly.
         return Promise.resolve({ data: null, error: null });
       }),
       from: jest.fn().mockImplementation((table: string) => ({
@@ -122,7 +117,7 @@ describe("Search Presentation Actions", () => {
     expect(results).toContain("Dune");
   });
 
-  it("should return empty recent searches array from server (handled client-side)", async () => {
+  it("should return empty array from getRecentSearchesAction (search history retired; handled client-side via localStorage)", async () => {
     const results = await getRecentSearchesAction();
 
     expect(results).toEqual([]);
