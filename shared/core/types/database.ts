@@ -1824,6 +1824,13 @@ export type Database = {
           type: string
         }[]
       }
+      get_recent_searches_v1: {
+        Args: { p_user_id: string }
+        Returns: {
+          query: string
+          searched_at: string
+        }[]
+      }
       get_search_autocomplete_v1: {
         Args: { p_query: string }
         Returns: {
@@ -1922,6 +1929,22 @@ export type Database = {
         Args: { p_book_id: string }
         Returns: number
       }
+      log_search_analytics: {
+        Args: {
+          p_execution_time_ms: number
+          p_filters: Json
+          p_id: string
+          p_is_slow_query: boolean
+          p_is_zero_result: boolean
+          p_normalized_query: string
+          p_query: string
+          p_result_count: number
+          p_searched_at: string
+          p_sort_strategy: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       match_books: {
         Args: {
           match_count: number
@@ -2004,6 +2027,7 @@ export type Database = {
         Args: { target_book_id: string }
         Returns: undefined
       }
+      refresh_trending_searches_v1: { Args: never; Returns: undefined }
       release_in_flight_attempt: {
         Args: { p_attempt_id?: string; p_key: string }
         Returns: undefined
