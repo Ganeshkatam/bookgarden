@@ -10,6 +10,7 @@ import type { BookId } from "../domain/value-objects";
 import { Book } from "../domain/entities/Book";
 import { BookMapper } from "./mappers/BookMapper";
 import type { BookRow } from "./models/BookRow";
+import { ConcurrencyConflictError } from "@/shared/kernel/DomainError";
 
 export class SupabaseBookRepository implements BookRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
@@ -147,6 +148,7 @@ export class SupabaseBookRepository implements BookRepository {
       is_textbook: bookProps.isTextbook,
       is_published: bookProps.isPublished,
       is_archived: bookProps.isArchived,
+      version: book.version,
       created_at: bookProps.createdAt.toISOString(),
       updated_at: bookProps.updatedAt.toISOString(),
     };
@@ -161,6 +163,18 @@ export class SupabaseBookRepository implements BookRepository {
         "[SupabaseBookRepository] Failed to save book aggregate:",
         error,
       );
+
+      // SQLSTATE 40001 (serialization_failure) or explicit Concurrency conflict message
+      if (
+        error.code === "40001" ||
+        (typeof error.message === "string" &&
+          error.message.includes("Concurrency conflict"))
+      ) {
+        throw new ConcurrencyConflictError(
+          error.message || "The book was modified by another operation.",
+        );
+      }
+
       throw new Error(`Failed to save book: ${error.message}`);
     }
   }

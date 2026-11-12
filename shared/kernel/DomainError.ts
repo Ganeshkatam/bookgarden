@@ -37,3 +37,15 @@ export class InvariantViolation extends DomainError {
     super(message);
   }
 }
+
+/**
+ * Thrown when an optimistic concurrency check fails during persistence
+ * (e.g. PostgreSQL SQLSTATE 40001 serialization_failure).
+ */
+export class ConcurrencyConflictError extends DomainError {
+  constructor(message = "The book was modified by another operation.") {
+    super(message);
+    this.name = "ConcurrencyConflictError";
+  }
+}
+
