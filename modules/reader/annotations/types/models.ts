@@ -13,9 +13,11 @@ export interface Annotation {
 
   // For highlights/drawings
   color?: AnnotationColor;
+  selectedText?: string;
 
   // For text notes attached to highlights or areas
   noteText?: string;
+  highlightId?: string | null;
 
   // Metadata
   createdAt: string;
@@ -29,5 +31,7 @@ export interface AnnotationCreatePayload {
   type: AnnotationType;
   anchor: AnnotationAnchor;
   color?: AnnotationColor;
+  selectedText?: string;
   noteText?: string;
+  highlightId?: string | null;
 }
