@@ -43,9 +43,9 @@ export const useAnnotationStore = create<AnnotationState>((set) => ({
 
   addAnnotation: (payload, bookId, userId) =>
     set((state) => {
-      const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const stableId = crypto.randomUUID();
       const newAnnotation: Annotation = {
-        id: tempId,
+        id: stableId,
         bookId,
         userId,
         ...payload,
@@ -55,7 +55,7 @@ export const useAnnotationStore = create<AnnotationState>((set) => ({
       };
 
       return {
-        annotations: { ...state.annotations, [tempId]: newAnnotation },
+        annotations: { ...state.annotations, [stableId]: newAnnotation },
       };
     }),
 
@@ -64,17 +64,21 @@ export const useAnnotationStore = create<AnnotationState>((set) => ({
       const existing = state.annotations[id];
       if (!existing) return state;
 
+      const determinedSyncState =
+        updates.syncState !== undefined
+          ? updates.syncState
+          : existing.syncState === "synced"
+            ? "pending_update"
+            : existing.syncState;
+
       return {
         annotations: {
           ...state.annotations,
           [id]: {
             ...existing,
             ...updates,
-            updatedAt: new Date().toISOString(),
-            syncState:
-              existing.syncState === "synced"
-                ? "pending_update"
-                : existing.syncState,
+            updatedAt: updates.updatedAt || new Date().toISOString(),
+            syncState: determinedSyncState,
           },
         },
       };
@@ -85,8 +89,11 @@ export const useAnnotationStore = create<AnnotationState>((set) => ({
       const existing = state.annotations[id];
       if (!existing) return state;
 
-      // If it was only local, we can delete it outright.
-      if (existing.syncState === "pending_create") {
+      // If it was already pending_delete or pending_create, remove it from the dictionary
+      if (
+        existing.syncState === "pending_create" ||
+        existing.syncState === "pending_delete"
+      ) {
         const nextAnnotations = { ...state.annotations };
         delete nextAnnotations[id];
         return { annotations: nextAnnotations };

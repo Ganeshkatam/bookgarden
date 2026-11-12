@@ -12,6 +12,7 @@ import {
   ReadingStateChanged,
 } from "../events";
 import { InvalidReadingStateTransition } from "../errors";
+import { ValidationError } from "@/shared/kernel/DomainError";
 
 interface LibraryBookProps {
   userId: UserId;
@@ -80,6 +81,10 @@ export class LibraryBook extends AggregateRoot<LibraryBookProps> {
     bookId: string,
     initialState: ReadingStateValue = "want_to_read",
   ): LibraryBook {
+    if (!bookId || bookId.trim().length === 0) {
+      throw new ValidationError("BookId cannot be empty");
+    }
+
     const state = ReadingState.create(initialState);
     let timeline = ReadingTimeline.empty();
 
